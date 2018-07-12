@@ -1,0 +1,24 @@
+whitespace = _{ " " }
+
+// useful
+Var = { 'a'..'z' }
+Lambda = { 'λ' }
+Arrow = { '→' }
+LParen = { '(' }
+RParen = { ')' }
+
+
+//keywords
+Zero = { '0' }
+True = { "true" }
+False = { "false" }
+If = { "if" }
+Then = { "then" }
+Else = { "else" }
+Succ = { "succ" }
+Pred = { "pred" }
+IsZero = { "iszero" }
+Bool = { "Bool" }
+Nat = { "Nat" }
+
+Keyword = { Zero / True / False / If / Then / Else / Succ / Pred / IsZero / Bool / Nat }
