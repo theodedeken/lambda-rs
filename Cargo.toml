@@ -1,0 +1,8 @@
+[package]
+name = "lambda-rs"
+version = "0.1.0"
+authors = ["Theo Dedeken <theo.dedeken@ugent.be>"]
+
+[dependencies]
+pest = "^1.0"
+pest_derive = "^1.0"
