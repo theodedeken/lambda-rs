@@ -1,24 +1,29 @@
 whitespace = _{ " " }
 
 // useful
-Var = { 'a'..'z' }
-Lambda = { 'λ' }
-Arrow = { '→' }
-LParen = { '(' }
-RParen = { ')' }
+ident = { !keyword ~ ('a'..'z')+ }
+lambda = { "λ" }
+arrow = { "→" }
+lparen = { "(" }
+rparen = { ")" }
+colon = { ":" }
 
 
 //keywords
-Zero = { '0' }
-True = { "true" }
-False = { "false" }
-If = { "if" }
-Then = { "then" }
-Else = { "else" }
-Succ = { "succ" }
-Pred = { "pred" }
-IsZero = { "iszero" }
-Bool = { "Bool" }
-Nat = { "Nat" }
+val_zero = { "0" }
+val_true = { "true" }
+val_false = { "false" }
+key_if = { "if" }
+key_then = { "then" }
+key_else = { "else" }
+op_succ = { "succ" }
+op_pred = { "pred" }
+op_is_zero = { "iszero" }
+type_bool = { "Bool" }
+type_nat = { "Nat" }
 
-Keyword = { Zero / True / False / If / Then / Else / Succ / Pred / IsZero / Bool / Nat }
+keyword = _{ val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | op_is_zero | type_bool | type_nat }
+
+
+
+token_list = _{ ( ident | lambda | arrow | lparen | rparen | colon | val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | op_is_zero | type_bool | type_nat )* }
