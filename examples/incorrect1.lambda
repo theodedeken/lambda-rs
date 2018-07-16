@@ -1,1 +1,1 @@
-(λ a: Nat → succ succ 0) iszero true
+(λ a: Nat. succ succ 0) iszero true

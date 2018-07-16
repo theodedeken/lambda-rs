@@ -1,9 +1,9 @@
-whitespace = _{ " " }
+whitespace = _{ " " | "\n" | lparen | rparen }
 
 // useful
 ident = { !keyword ~ ('a'..'z')+ }
 lambda = { "λ" }
-arrow = { "→" }
+dot = { "." }
 lparen = { "(" }
 rparen = { ")" }
 colon = { ":" }
@@ -22,8 +22,18 @@ op_is_zero = { "iszero" }
 type_bool = { "Bool" }
 type_nat = { "Nat" }
 
+type_term = { type_bool | type_nat }
+
 keyword = _{ val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | op_is_zero | type_bool | type_nat }
 
+program = { soi ~ application ~ eoi }
 
+application = { var_abstr ~ application* }
 
-token_list = _{ ( ident | lambda | arrow | lparen | rparen | colon | val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | op_is_zero | type_bool | type_nat )* }
+var_abstr = { variable | abstraction }
+
+abstraction = { lambda ~ ident ~ colon ~ type_term ~ dot ~ application }
+
+variable = { val_zero | val_true | val_false }
+
+token_list = _{ ( ident | lambda | dot | lparen | rparen | colon | val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | op_is_zero | type_bool | type_nat )* }

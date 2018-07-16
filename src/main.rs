@@ -9,7 +9,7 @@ use pest::Parser;
 struct LambdaParser;
 
 fn main() {
-    let pairs = LambdaParser::parse(Rule::token_list, "(λ a: Nat → succ succ a) 0")
+    let pairs = LambdaParser::parse(Rule::program, "(λ a: Nat. succ succ a) 0")
         .unwrap_or_else(|e| panic!("{}", e));
 
     // Because ident_list is silent, the iterator will contain idents
