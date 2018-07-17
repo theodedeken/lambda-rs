@@ -4,39 +4,52 @@ extern crate pest_derive;
 
 use pest::iterators::Pair;
 use pest::Parser;
+use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
+use std::process;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
 struct LambdaParser;
 
 fn main() {
-    let pairs = LambdaParser::parse(Rule::program, "(λ a: Nat. succ succ 0) iszero true")
-        .unwrap_or_else(|e| panic!("{}", e));
+    let args: Vec<String> = env::args().collect();
 
-    // Because ident_list is silent, the iterator will contain idents
+    if args.len() != 2 {
+        println!("This interpreter takes exactly one argument: the filename of the lambda code");
+        process::exit(1);
+    }
+    let filename = args[1].clone();
+    let contents = read_file(&filename).unwrap_or_else(|e| {
+        println!("Problem when reading file: {}", e);
+        process::exit(1);
+    });
+    let pairs = LambdaParser::parse(Rule::program, &contents).unwrap_or_else(|e| {
+        println!("Problem when parsing file: {}", e);
+        process::exit(1);
+    });
+
     for pair in pairs {
         recursive_print(pair, 0);
     }
 }
 
+fn read_file(path: &str) -> Result<String, Box<Error>> {
+    let mut f = File::open(path)?;
+
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)?;
+    Ok(contents)
+}
+
 fn recursive_print(pair: Pair<'_, Rule>, level: usize) {
     let span = pair.clone().into_span();
-    // A pair is a combination of the rule which matched and a span of input
-    print!("{}", "\t".repeat(level));
-    println!("Rule:    {:?}", pair.as_rule());
-    print!("{}", "\t".repeat(level));
-    //println!("Span:    {:?}", span);
-    println!("Text:    {}", span.as_str());
+    println!("{}Rule:    {:?}", "\t".repeat(level), pair.as_rule());
+    println!("{}Text:    {}", "\t".repeat(level), span.as_str());
 
-    // A pair can be converted to an iterator of the tokens which make it up:
     for inner_pair in pair.into_inner() {
         recursive_print(inner_pair, level + 1);
-        /*
-        let inner_span = inner_pair.clone().into_span();
-        match inner_pair.as_rule() {
-            Rule::alpha => println!("Letter:  {}", inner_span.as_str()),
-            Rule::digit => println!("Digit:   {}", inner_span.as_str()),
-            _ => unreachable!(),
-        };*/
     }
 }
