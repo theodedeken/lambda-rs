@@ -1,7 +1,9 @@
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
+extern crate lambda_rs;
 
+use lambda_rs::ast::*;
 use pest::iterators::Pair;
 use pest::Parser;
 use std::env;
@@ -30,6 +32,10 @@ fn main() {
         println!("Problem when parsing file: {}", e);
         process::exit(1);
     });
+
+    //build ast
+    //check ast
+    //evaluate ast
 
     for pair in pairs {
         recursive_print(pair, 0);
