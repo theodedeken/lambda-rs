@@ -1,12 +1,12 @@
-whitespace = _{ " " | "\n" | lparen | rparen }
+whitespace = _{ " " | "\n" }
 
 // useful
 ident = { !keyword ~ ('a'..'z')+ }
-lambda = { "λ" }
-dot = { "." }
-lparen = { "(" }
-rparen = { ")" }
-colon = { ":" }
+lambda = _{ "λ" }
+dot = _{ "." }
+lparen = _{ "(" }
+rparen = _{ ")" }
+colon = _{ ":" }
 
 
 //keywords
@@ -22,7 +22,7 @@ is_zero = { "iszero" }
 type_bool = { "Bool" }
 type_nat = { "Nat" }
 
-type_term = { type_bool | type_nat }
+type_term = _{ type_bool | type_nat }
 
 keyword = _{ val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | is_zero | type_bool | type_nat }
 
@@ -30,18 +30,20 @@ program = { soi ~ application ~ eoi }
 
 application = { var_abstr ~ application* }
 
-var_abstr = { variable | abstraction }
+var_abstr = _{ variable | abstraction }
 
-abstraction = { lambda ~ ident ~ colon ~ type_term ~ dot ~ application }
+abstraction = { lparen* ~ lambda ~ ident ~ colon ~ type_term ~ dot ~ application ~ rparen* }
 
-variable = { val_zero | val_true | val_false | ident | if_then | zero_check | arithmetic }
+variable = { val_zero | val_true | val_false | ident | if_then | zero_check | arithmetic | paren_var }
 
 if_then = { key_if ~ application ~ key_then ~ application ~ key_else ~ application }
 
 zero_check = { is_zero ~ application }
 
-operator = { op_succ | op_pred }
+operator = _{ op_succ | op_pred }
 
 arithmetic = { operator ~ application }
+
+paren_var = _{ lparen ~ variable ~ rparen }
 
 token_list = _{ ( ident | lambda | dot | lparen | rparen | colon | val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | is_zero | type_bool | type_nat )* }
