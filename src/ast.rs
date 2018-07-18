@@ -27,22 +27,26 @@ impl Error for ASTError {
     }
 }
 
+#[derive(Debug)]
 pub enum Value {
     True,
     False,
     Zero,
 }
 
+#[derive(Debug)]
 pub enum Operator {
     Succ,
     Pred,
 }
 
+#[derive(Debug)]
 pub enum Type {
     Bool,
     Nat,
 }
 
+#[derive(Debug)]
 pub enum ASTNode {
     AbstractionNode {
         ident: Box<ASTNode>,
@@ -71,6 +75,59 @@ pub enum ASTNode {
     ValueNode {
         value: Value,
     },
+}
+
+impl ASTNode {
+    pub fn print(&self) {
+        self.print_node(0)
+    }
+
+    fn print_node(&self, level: usize) {
+        match self {
+            ASTNode::AbstractionNode {
+                ident,
+                data_type,
+                body,
+            } => {
+                println!(
+                    "{}Abstraction with type {:?}",
+                    "\t".repeat(level),
+                    data_type
+                );
+                ident.print_node(level + 1);
+                body.print_node(level + 1);
+            }
+            ASTNode::ApplicationNode { left, right } => {
+                println!("{}Application", "\t".repeat(level));
+                left.print_node(level + 1);
+                right.print_node(level + 1);
+            }
+            ASTNode::IdentifierNode { name } => {
+                println!("{}Identifier with name {}", "\t".repeat(level), name);
+            }
+            ASTNode::IsZeroNode { expr } => {
+                println!("{}IsZero", "\t".repeat(level));
+                expr.print_node(level + 1);
+            }
+            ASTNode::ValueNode { value } => {
+                println!("{}Value {:?}", "\t".repeat(level), value);
+            }
+            ASTNode::ArithmeticNode { op, expr } => {
+                println!("{}Arithmetic with operator {:?}", "\t".repeat(level), op);
+                expr.print_node(level + 1);
+            }
+            ASTNode::ConditionNode {
+                clause,
+                then_arm,
+                else_arm,
+            } => {
+                println!("{}Condition", "\t".repeat(level));
+                clause.print_node(level + 1);
+                then_arm.print_node(level + 1);
+                else_arm.print_node(level + 1);
+            }
+        }
+    }
 }
 
 pub fn build_ast(mut parsed: Pairs<Rule>) -> Result<ASTNode, Box<Error>> {
