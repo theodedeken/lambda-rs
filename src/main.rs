@@ -40,7 +40,7 @@ fn main() {
     ast_tree.print();
     //check ast
     let tree_type = ast_tree.check().unwrap_or_else(|e| {
-        println!("Problem when type checking:\n {}", e);
+        println!("Problem when type checking: {}", e);
         process::exit(1);
     });
     //evaluate ast

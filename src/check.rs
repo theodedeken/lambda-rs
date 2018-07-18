@@ -34,10 +34,10 @@ pub enum TypeAssignment {
 //TODO if let more
 impl ASTNode {
     pub fn check(&self) -> Result<TypeAssignment, Box<Error>> {
-        self.check_node(&SymbolTable::new())
+        self.check_node(&mut SymbolTable::new())
     }
 
-    fn check_node(&self, table: &SymbolTable) -> Result<TypeAssignment, Box<Error>> {
+    fn check_node(&self, table: &mut SymbolTable) -> Result<TypeAssignment, Box<Error>> {
         match self {
             ASTNode::ValueNode { value } => match value {
                 Value::True => Ok(TypeAssignment::Single(Type::Bool)),
@@ -45,12 +45,20 @@ impl ASTNode {
                 Value::Zero => Ok(TypeAssignment::Single(Type::Nat)),
             },
             ASTNode::IsZeroNode { expr } => match expr.check_node(table)? {
-                TypeAssignment::Single(Type::Bool) => Ok(TypeAssignment::Single(Type::Bool)),
+                TypeAssignment::Single(Type::Nat) => Ok(TypeAssignment::Single(Type::Bool)),
                 _ => Err(Box::new(TypeError::new(format!(
                     "Found a zero check with inner expression not of type Nat"
                 )))),
             },
-            ASTNode::IdentifierNode { name } => Ok(table.lookup(name.to_string())),
+            ASTNode::IdentifierNode { name } => {
+                if let Some(type_ass) = table.lookup(name) {
+                    Ok(type_ass)
+                } else {
+                    Err(Box::new(TypeError::new(format!(
+                        "Unknown identifier found"
+                    ))))
+                }
+            }
             ASTNode::ConditionNode {
                 clause,
                 then_arm,
@@ -99,7 +107,7 @@ impl ASTNode {
                 data_type,
                 body,
             } => {
-                table.add(Scope::new(ident.to_string(), data_type.clone()));
+                table.push(Scope::new(ident.to_string(), data_type.clone()));
                 let body_type = body.check_node(table)?;
                 Ok(TypeAssignment::Arrow(
                     Box::new(TypeAssignment::Single(data_type.clone())),

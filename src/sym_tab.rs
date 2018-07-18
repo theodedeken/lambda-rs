@@ -1,28 +1,42 @@
 use ast::Type;
 use check::TypeAssignment;
+use std::collections::HashMap;
 
-pub struct SymbolTable {}
+pub struct SymbolTable {
+    table: Vec<Scope>,
+}
 
 pub struct Scope {
-    name: String,
-    data_type: Type,
+    map: HashMap<String, Type>,
 }
 
 impl SymbolTable {
     pub fn new() -> SymbolTable {
-        SymbolTable {}
+        SymbolTable { table: Vec::new() }
     }
 
-    pub fn lookup(&self, name: String) -> TypeAssignment {
-        //TODO implement
-        TypeAssignment::Single(Type::Bool)
+    pub fn lookup(&self, name: &str) -> Option<TypeAssignment> {
+        for scope in &self.table {
+            if let Some(data_type) = scope.get(name) {
+                return Some(TypeAssignment::Single(data_type.clone()));
+            }
+        }
+        None
     }
 
-    pub fn add(&self, scope: Scope) {}
+    pub fn push(&mut self, scope: Scope) {
+        self.table.push(scope);
+    }
 }
 
 impl Scope {
     pub fn new(name: String, data_type: Type) -> Scope {
-        Scope { name, data_type }
+        let mut map = HashMap::new();
+        map.insert(name, data_type);
+        Scope { map }
+    }
+
+    pub fn get(&self, name: &str) -> Option<&Type> {
+        self.map.get(name)
     }
 }
