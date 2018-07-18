@@ -4,17 +4,13 @@ extern crate pest_derive;
 extern crate lambda_rs;
 
 use lambda_rs::ast::*;
+use lambda_rs::parser::*;
 use pest::iterators::Pair;
-use pest::Parser;
 use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::process;
-
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
-struct LambdaParser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -28,18 +24,22 @@ fn main() {
         println!("Problem when reading file: {}", e);
         process::exit(1);
     });
-    let pairs = LambdaParser::parse(Rule::program, &contents).unwrap_or_else(|e| {
+    let pairs = parse_file(&contents).unwrap_or_else(|e| {
         println!("Problem when parsing file: {}", e);
         process::exit(1);
     });
 
-    //build ast
-    //check ast
-    //evaluate ast
-
-    for pair in pairs {
+    for pair in pairs.clone() {
         recursive_print(pair, 0);
     }
+
+    //build ast
+    let ast_tree = build_ast(pairs).unwrap_or_else(|e| {
+        println!("Problem when building ast tree: {}", e);
+        process::exit(1);
+    });
+    //check ast
+    //evaluate ast
 }
 
 fn read_file(path: &str) -> Result<String, Box<Error>> {
@@ -53,7 +53,11 @@ fn read_file(path: &str) -> Result<String, Box<Error>> {
 fn recursive_print(pair: Pair<'_, Rule>, level: usize) {
     let span = pair.clone().into_span();
     println!("{}Rule:    {:?}", "\t".repeat(level), pair.as_rule());
-    println!("{}Text:    {}", "\t".repeat(level), span.as_str());
+    println!(
+        "{}Text:    {}",
+        "\t".repeat(level),
+        span.as_str().replace("\n", " ")
+    );
 
     for inner_pair in pair.into_inner() {
         recursive_print(inner_pair, level + 1);

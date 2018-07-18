@@ -1,4 +1,4 @@
-whitespace = _{ " " | "\n" }
+whitespace = _{ " " | "\n" | "\t" }
 
 // useful
 ident = { !keyword ~ ('a'..'z')+ }
@@ -13,12 +13,12 @@ colon = _{ ":" }
 val_zero = { "0" }
 val_true = { "true" }
 val_false = { "false" }
-key_if = { "if" }
-key_then = { "then" }
-key_else = { "else" }
+key_if = _{ "if" }
+key_then = _{ "then" }
+key_else = _{ "else" }
 op_succ = { "succ" }
 op_pred = { "pred" }
-is_zero = { "iszero" }
+is_zero = _{ "iszero" }
 type_bool = { "Bool" }
 type_nat = { "Nat" }
 
@@ -32,9 +32,9 @@ application = { var_abstr ~ application* }
 
 var_abstr = _{ variable | abstraction }
 
-abstraction = { lparen* ~ lambda ~ ident ~ colon ~ type_term ~ dot ~ application ~ rparen* }
+abstraction = { lparen* ~ lambda ~ ident ~ colon ~ type_term ~ dot ~ application ~ rparen? }
 
-variable = { val_zero | val_true | val_false | ident | if_then | zero_check | arithmetic | paren_var }
+variable = _{ val_zero | val_true | val_false | ident | if_then | zero_check | arithmetic | paren_var }
 
 if_then = { key_if ~ application ~ key_then ~ application ~ key_else ~ application }
 
