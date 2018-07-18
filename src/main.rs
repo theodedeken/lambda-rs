@@ -2,6 +2,7 @@ extern crate lambda_rs;
 extern crate pest;
 
 use lambda_rs::ast::*;
+use lambda_rs::eval::OutputValue;
 use lambda_rs::parser::*;
 use pest::iterators::Pair;
 use std::env;
@@ -43,6 +44,11 @@ fn main() {
         println!("Problem when type checking: {}", e);
         process::exit(1);
     });
+
+    match ast_tree.eval() {
+        OutputValue::Nat(x) => println!("{}", x),
+        OutputValue::Bool(x) => println!("{}", x),
+    }
     //evaluate ast
 }
 
