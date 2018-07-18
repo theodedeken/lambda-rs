@@ -40,7 +40,7 @@ pub enum Operator {
     Pred,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Bool,
     Nat,
@@ -49,7 +49,7 @@ pub enum Type {
 #[derive(Debug)]
 pub enum ASTNode {
     AbstractionNode {
-        ident: Box<ASTNode>,
+        ident: String,
         data_type: Type,
         body: Box<ASTNode>,
     },
@@ -90,11 +90,11 @@ impl ASTNode {
                 body,
             } => {
                 println!(
-                    "{}Abstraction with type {:?}",
+                    "{}Abstraction with variable {} of type {:?}",
                     "\t".repeat(level),
+                    ident,
                     data_type
                 );
-                ident.print_node(level + 1);
                 body.print_node(level + 1);
             }
             ASTNode::ApplicationNode { left, right } => {
@@ -196,8 +196,9 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
             Rule::type_bool => Ok(Type::Bool),
             _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
         };
+        let span = inner[0].clone().into_span();
         Ok(ASTNode::AbstractionNode {
-            ident: Box::new(build_node(inner[0].clone())?),
+            ident: span.as_str().to_string(),
             data_type: data_type?,
             body: Box::new(build_node(inner[2].clone())?),
         })
