@@ -27,14 +27,14 @@ impl Error for ASTError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     True,
     False,
     Zero,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Operator {
     Succ,
     Pred,
@@ -46,7 +46,7 @@ pub enum Type {
     Nat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ASTNode {
     AbstractionNode {
         ident: String,

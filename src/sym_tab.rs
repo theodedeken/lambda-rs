@@ -2,10 +2,12 @@ use ast::Type;
 use check::TypeAssignment;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct SymbolTable<T> {
     table: Vec<Scope<T>>,
 }
 
+#[derive(Clone)]
 pub struct Scope<T> {
     map: HashMap<String, T>,
 }

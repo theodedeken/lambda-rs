@@ -40,16 +40,17 @@ fn main() {
 
     ast_tree.print();
     //check ast
-    let tree_type = ast_tree.check().unwrap_or_else(|e| {
+    let _tree_type = ast_tree.check().unwrap_or_else(|e| {
         println!("Problem when type checking: {}", e);
         process::exit(1);
     });
 
+    //evaluate ast
     match ast_tree.eval() {
         OutputValue::Nat(x) => println!("{}", x),
         OutputValue::Bool(x) => println!("{}", x),
+        OutputValue::Func(_x, _y, _z) => println!("This should not happen I think"),
     }
-    //evaluate ast
 }
 
 fn read_file(path: &str) -> Result<String, Box<Error>> {

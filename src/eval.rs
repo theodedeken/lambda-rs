@@ -1,11 +1,15 @@
 use ast::*;
+use std::rc::Rc;
 use sym_tab::*;
 
-//#[derive(Clone)]
+//type Abstr = Fn(OutputValue) -> OutputValue + 'static;
+
+#[derive(Clone)]
 pub enum OutputValue {
     Nat(usize),
     Bool(bool),
-    Func(Box<Fn(OutputValue) -> OutputValue>),
+    Func(String, Box<ASTNode>, SymbolTable<OutputValue>),
+    //Func(Rc<Abstr>),
 }
 
 impl ASTNode {
@@ -19,20 +23,16 @@ impl ASTNode {
                 ident,
                 data_type,
                 body,
-            } => OutputValue::Func(Box::new(|x| {
-                table.push(Scope::new(ident.to_string(), x));
-                body.eval_node(table)
-            })),
+            } => OutputValue::Func(ident.to_string(), body.clone(), table.clone()),
             ASTNode::ApplicationNode { left, right } => {
-                OutputValue::Bool(true)
-                /*let left_val = left.eval_node(table);
+                let left_val = left.eval_node(table);
                 let right_val = right.eval_node(table);
-                if let OutputValue::Func(func) = left_val {
-                    let result = func(right_val);
-                    return result;
+                if let OutputValue::Func(ident, body, mut table) = left_val {
+                    table.push(Scope::new(ident, right_val));
+                    body.eval_node(&mut table)
                 } else {
                     panic!("Bug in typechecker: in evaluation of application the left argument was not evaluated to a function");
-                }*/
+                }
             }
             ASTNode::ArithmeticNode { op, expr } => {
                 if let OutputValue::Nat(x) = expr.eval_node(table) {
@@ -64,12 +64,10 @@ impl ASTNode {
                 }
             }
             ASTNode::IdentifierNode { name } => {
-                OutputValue::Bool(true)
-                /*
-                table
-                .lookup(name)
-                .expect("Bug in typechecker: came across unknown variable")
-                .clone()*/
+                let value = table
+                    .lookup(name)
+                    .expect("Bug in typechecker: came across unknown variable");
+                value.clone()
             }
             ASTNode::IsZeroNode { expr } => {
                 if let OutputValue::Nat(x) = expr.eval_node(table) {
