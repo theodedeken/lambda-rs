@@ -3,7 +3,7 @@ use sym_tab::*;
 
 //type Abstr = Fn(OutputValue) -> OutputValue + 'static;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OutputValue {
     Nat(usize),
     Bool(bool),

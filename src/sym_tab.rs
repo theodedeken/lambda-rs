@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SymbolTable<T> {
     table: Vec<Scope<T>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Scope<T> {
     map: HashMap<String, T>,
 }

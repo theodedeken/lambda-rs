@@ -6,9 +6,7 @@ use lambda_rs::eval::OutputValue;
 use lambda_rs::parser::*;
 use pest::iterators::Pair;
 use std::env;
-use std::error::Error;
-use std::fs::File;
-use std::io::prelude::*;
+
 use std::process;
 
 fn main() {
@@ -19,7 +17,7 @@ fn main() {
         process::exit(1);
     }
     let filename = args[1].clone();
-    let contents = read_file(&filename).unwrap_or_else(|e| {
+    let contents = lambda_rs::read_file(&filename).unwrap_or_else(|e| {
         println!("Problem when reading file: {}", e);
         process::exit(1);
     });
@@ -51,14 +49,6 @@ fn main() {
         OutputValue::Bool(x) => println!("{}", x),
         OutputValue::Func(_x, _y, _z) => println!("This should not happen I think"),
     }
-}
-
-fn read_file(path: &str) -> Result<String, Box<Error>> {
-    let mut f = File::open(path)?;
-
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)?;
-    Ok(contents)
 }
 
 fn recursive_print(pair: Pair<'_, Rule>, level: usize) {
