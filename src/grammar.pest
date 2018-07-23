@@ -1,7 +1,8 @@
 whitespace = _{ " " | "\n" | "\t" }
 
 // Identifier
-ident = { !keyword ~ ('a'..'z')+ }
+ident = @{ !keyword ~ ('a'..'z')+ ~ !"." }
+p_ident = @ { !keyword ~ ('a'..'z')+ }
 
 // Keywords
 val_zero = { "0" }
@@ -21,12 +22,17 @@ program = { soi ~ application ~ eoi }
 
 // Terms
 application = { var_abstr ~ application* }
-var_abstr = _{ variable | abstraction }
+var_abstr = _{ variable | abstraction | record | projection }
 abstraction = { "("* ~ "λ" ~ ident ~ ":" ~ type_ass ~ "." ~ application ~ ")"? }
+record = { "{" ~ (record_el ~ ",")* ~ record_el ~ "}" }
+record_el = { ident ~ "=" ~ application }
+projection = @{ p_ident ~ "." ~ ident }
 
 // Types
-type_ass = _{ type_nat | type_bool | type_arrow }
+type_ass = _{ type_nat | type_bool | type_arrow | type_record }
 type_arrow = { "(" ~ type_ass ~ "->" ~ type_ass ~ ")" }
+type_record = { "{" ~ (type_record_el ~ ",")* ~ type_record_el ~ "}" }
+type_record_el = { ident ~ ":" ~ type_ass }
 
 // Values
 variable = _{ val_zero | val_true | val_false | ident | if_then | zero_check | arithmetic | paren_var }
