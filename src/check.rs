@@ -26,11 +26,6 @@ impl Error for TypeError {
     }
 }
 
-#[derive(PartialEq, Clone)]
-pub enum TypeAssignment {
-    Single(Type),
-    Arrow(Box<TypeAssignment>, Box<TypeAssignment>),
-}
 //TODO if let more
 impl ASTNode {
     pub fn check(&self) -> Result<TypeAssignment, Box<Error>> {
@@ -58,7 +53,8 @@ impl ASTNode {
                     Ok(type_ass.clone())
                 } else {
                     Err(Box::new(TypeError::new(format!(
-                        "Unknown identifier found"
+                        "Unknown identifier found: {}",
+                        name
                     ))))
                 }
             }
@@ -110,13 +106,10 @@ impl ASTNode {
                 data_type,
                 body,
             } => {
-                table.push(Scope::new(
-                    ident.to_string(),
-                    TypeAssignment::Single(data_type.clone()),
-                ));
+                table.push(Scope::new(ident.to_string(), data_type.clone()));
                 let body_type = body.check_node(table)?;
                 Ok(TypeAssignment::Arrow(
-                    Box::new(TypeAssignment::Single(data_type.clone())),
+                    Box::new(data_type.clone()),
                     Box::new(body_type),
                 ))
             }

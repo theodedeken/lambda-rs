@@ -1,10 +1,9 @@
 use ast::*;
-use std::rc::Rc;
 use sym_tab::*;
 
 //type Abstr = Fn(OutputValue) -> OutputValue + 'static;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum OutputValue {
     Nat(usize),
     Bool(bool),

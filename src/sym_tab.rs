@@ -1,13 +1,11 @@
-use ast::Type;
-use check::TypeAssignment;
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SymbolTable<T> {
     table: Vec<Scope<T>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Scope<T> {
     map: HashMap<String, T>,
 }

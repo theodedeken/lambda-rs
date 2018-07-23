@@ -41,6 +41,12 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum TypeAssignment {
+    Single(Type),
+    Arrow(Box<TypeAssignment>, Box<TypeAssignment>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Bool,
     Nat,
@@ -50,7 +56,7 @@ pub enum Type {
 pub enum ASTNode {
     AbstractionNode {
         ident: String,
-        data_type: Type,
+        data_type: TypeAssignment,
         body: Box<ASTNode>,
     },
     ApplicationNode {
@@ -191,11 +197,14 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
     let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
 
     if inner.len() == 3 {
+        let data_type = build_type(inner[1].clone());
+        /*
         let data_type = match inner[1].as_rule() {
+            
             Rule::type_nat => Ok(Type::Nat),
             Rule::type_bool => Ok(Type::Bool),
             _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
-        };
+        };*/
         let span = inner[0].clone().into_span();
         Ok(ASTNode::AbstractionNode {
             ident: span.as_str().to_string(),
@@ -209,11 +218,26 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
     }
 }
 
+fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
+    match pair.as_rule() {
+        Rule::type_nat => Ok(TypeAssignment::Single(Type::Nat)),
+        Rule::type_bool => Ok(TypeAssignment::Single(Type::Bool)),
+        Rule::type_arrow => {
+            let arrow: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+            let left = build_type(arrow[0].clone())?;
+            let right = build_type(arrow[1].clone())?;
+            Ok(TypeAssignment::Arrow(Box::new(left), Box::new(right)))
+        }
+        _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
+    }
+}
+
 fn build_ident(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
     let span = pair.into_span();
-    Ok(ASTNode::IdentifierNode {
-        name: span.as_str().to_string(),
-    })
+    let mut string = span.as_str().to_string();
+    // hack because of bug in parser
+    string = string.chars().filter(|chr| chr != &' ').collect();
+    Ok(ASTNode::IdentifierNode { name: string })
 }
 
 fn build_arithmetic(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
