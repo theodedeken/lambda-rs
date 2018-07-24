@@ -1,4 +1,5 @@
 use ast::*;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use sym_tab::*;
@@ -112,11 +113,27 @@ impl ASTNode {
                     Box::new(body_type),
                 ))
             }
-            ASTNode::ProjectionNode { target, attrib } => Err(Box::new(TypeError::new(format!(
-                "Projection not implemented"
-            )))),
+            ASTNode::ProjectionNode { target, attrib } => {
+                if let TypeAssignment::Record(types) = target.check_node(table)? {
+                    if let Some(attrib_type) = types.get(attrib) {
+                        Ok(attrib_type.clone())
+                    } else {
+                        Err(Box::new(TypeError::new(format!(
+                            "Projection attribute is not defined"
+                        ))))
+                    }
+                } else {
+                    Err(Box::new(TypeError::new(format!(
+                        "Found a projection where the target argument was not of type record"
+                    ))))
+                }
+            }
             ASTNode::RecordNode { records } => {
-                Err(Box::new(TypeError::new(format!("Record not implemented"))))
+                let mut types: HashMap<String, TypeAssignment> = HashMap::new();
+                for (name, node) in records {
+                    types.insert(name.to_string(), node.check_node(table)?);
+                }
+                Ok(TypeAssignment::Record(types))
             }
         }
     }
