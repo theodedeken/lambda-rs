@@ -219,20 +219,26 @@ fn build_application(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
 fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
     let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
 
-    if inner.len() == 3 {
-        let data_type = build_type(inner[1].clone());
+    if inner.len() == 2 {
+        let (ident, data_type) = build_type_term(inner[0].clone())?;
 
-        let span = inner[0].clone().into_span();
         Ok(ASTNode::AbstractionNode {
-            ident: span.as_str().to_string(),
-            data_type: data_type?,
-            body: Box::new(build_node(inner[2].clone())?),
+            ident,
+            data_type,
+            body: Box::new(build_node(inner[1].clone())?),
         })
     } else {
         Err(Box::new(ASTError::new(format!(
             "Found abstraction with incorrect number of arguments"
         ))))
     }
+}
+
+fn build_type_term(pair: Pair<'_, Rule>) -> Result<(String, TypeAssignment), Box<Error>> {
+    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+    let name = inner[0].clone().into_span().as_str().to_string();
+    let data_type = build_type(inner[1].clone())?;
+    Ok((name, data_type))
 }
 
 fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
@@ -248,12 +254,8 @@ fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
         Rule::type_record => {
             let mut map = HashMap::new();
             for el in pair.into_inner() {
-                let attribs: Vec<Pair<'_, Rule>> = el.into_inner().collect();
-                let record_type = build_type(attribs[1].clone())?;
-                map.insert(
-                    attribs[0].clone().into_span().as_str().to_string(),
-                    record_type,
-                );
+                let (ident, data_type) = build_type_term(el.clone())?;
+                map.insert(ident, data_type);
             }
             Ok(TypeAssignment::Record(map))
         }
