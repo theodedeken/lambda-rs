@@ -2,7 +2,7 @@ whitespace = _{ " " | "\n" | "\t" }
 
 // Identifier
 ident = @{ !keyword ~ ('a'..'z')+ ~ !"." }
-p_ident = @ { !keyword ~ ('a'..'z')+ }
+p_ident = @{ !keyword ~ ('a'..'z')+ }
 
 // Keywords
 val_zero = { "0" }
@@ -26,7 +26,9 @@ var_abstr = _{ variable | abstraction | record | projection }
 abstraction = { "("* ~ "λ" ~ ident ~ ":" ~ type_ass ~ "." ~ application ~ ")"? }
 record = { "{" ~ (record_el ~ ",")* ~ record_el ~ "}" }
 record_el = { ident ~ "=" ~ application }
-projection = @{ p_ident ~ "." ~ ident }
+projection = ${ projection_target ~ "." ~ ident }
+projection_target = _{ p_ident | record | "(" ~ application ~ ")" }
+//projection = ${ "("? ~ application ~ ")"? ~ "." ~ ident }
 
 // Types
 type_ass = _{ type_nat | type_bool | type_arrow | type_record }

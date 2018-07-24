@@ -26,7 +26,6 @@ impl Error for TypeError {
     }
 }
 
-//TODO if let more
 impl ASTNode {
     pub fn check(&self) -> Result<TypeAssignment, Box<Error>> {
         self.check_node(&mut SymbolTable::new())
@@ -112,6 +111,12 @@ impl ASTNode {
                     Box::new(data_type.clone()),
                     Box::new(body_type),
                 ))
+            }
+            ASTNode::ProjectionNode { target, attrib } => Err(Box::new(TypeError::new(format!(
+                "Projection not implemented"
+            )))),
+            ASTNode::RecordNode { records } => {
+                Err(Box::new(TypeError::new(format!("Record not implemented"))))
             }
         }
     }

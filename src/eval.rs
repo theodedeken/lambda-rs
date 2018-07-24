@@ -80,6 +80,8 @@ impl ASTNode {
                 Value::False => OutputValue::Bool(false),
                 Value::Zero => OutputValue::Nat(0),
             },
+            ASTNode::ProjectionNode { target, attrib } => panic!("projection not implemented"),
+            ASTNode::RecordNode { records } => panic!("projection not implemented"),
         }
     }
 }

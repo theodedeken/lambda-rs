@@ -1,6 +1,7 @@
 use parser::*;
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 
@@ -44,6 +45,7 @@ pub enum Operator {
 pub enum TypeAssignment {
     Single(Type),
     Arrow(Box<TypeAssignment>, Box<TypeAssignment>),
+    Record(HashMap<String, TypeAssignment>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -80,6 +82,13 @@ pub enum ASTNode {
     },
     ValueNode {
         value: Value,
+    },
+    ProjectionNode {
+        target: Box<ASTNode>,
+        attrib: String,
+    },
+    RecordNode {
+        records: HashMap<String, ASTNode>,
     },
 }
 
@@ -132,6 +141,17 @@ impl ASTNode {
                 then_arm.print_node(level + 1);
                 else_arm.print_node(level + 1);
             }
+            ASTNode::ProjectionNode { target, attrib } => {
+                println!("{}Projection to {} on", "\t".repeat(level), attrib);
+                target.print_node(level + 1);
+            }
+            ASTNode::RecordNode { records } => {
+                println!("{}Record with elements:", "\t".repeat(level));
+                for (name, assign) in records {
+                    println!("{}  {} =", "\t".repeat(level), name);
+                    assign.print_node(level + 1);
+                }
+            }
         }
     }
 }
@@ -150,9 +170,12 @@ fn build_node(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
         Rule::application => build_application(pair),
         Rule::abstraction => build_abstraction(pair),
         Rule::ident => build_ident(pair),
+        Rule::p_ident => build_ident(pair),
         Rule::arithmetic => build_arithmetic(pair),
         Rule::zero_check => build_zero_check(pair),
         Rule::if_then => build_if_then(pair),
+        Rule::projection => build_projection(pair),
+        Rule::record => build_record(pair),
         Rule::val_zero => Ok(ASTNode::ValueNode { value: Value::Zero }),
         Rule::val_true => Ok(ASTNode::ValueNode { value: Value::True }),
         Rule::val_false => Ok(ASTNode::ValueNode {
@@ -198,13 +221,7 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
 
     if inner.len() == 3 {
         let data_type = build_type(inner[1].clone());
-        /*
-        let data_type = match inner[1].as_rule() {
-            
-            Rule::type_nat => Ok(Type::Nat),
-            Rule::type_bool => Ok(Type::Bool),
-            _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
-        };*/
+
         let span = inner[0].clone().into_span();
         Ok(ASTNode::AbstractionNode {
             ident: span.as_str().to_string(),
@@ -227,6 +244,18 @@ fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
             let left = build_type(arrow[0].clone())?;
             let right = build_type(arrow[1].clone())?;
             Ok(TypeAssignment::Arrow(Box::new(left), Box::new(right)))
+        }
+        Rule::type_record => {
+            let mut map = HashMap::new();
+            for el in pair.into_inner() {
+                let attribs: Vec<Pair<'_, Rule>> = el.into_inner().collect();
+                let record_type = build_type(attribs[1].clone())?;
+                map.insert(
+                    attribs[0].clone().into_span().as_str().to_string(),
+                    record_type,
+                );
+            }
+            Ok(TypeAssignment::Record(map))
         }
         _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
     }
@@ -287,4 +316,26 @@ fn build_if_then(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
             "Found ifthenelse with incorrect number of arguments"
         ))))
     }
+}
+
+fn build_projection(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+    let parts: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+
+    let target = build_node(parts[0].clone())?;
+    let attrib = parts[1].clone().into_span().as_str().to_string();
+    Ok(ASTNode::ProjectionNode {
+        target: Box::new(target),
+        attrib,
+    })
+}
+
+fn build_record(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+    let mut records = HashMap::new();
+    for el in pair.into_inner() {
+        let parts: Vec<Pair<'_, Rule>> = el.into_inner().collect();
+        let name = parts[0].clone().into_span().as_str().to_string();
+        let result = build_node(parts[1].clone())?;
+        records.insert(name, result);
+    }
+    Ok(ASTNode::RecordNode { records })
 }
