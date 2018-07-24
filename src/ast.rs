@@ -46,6 +46,7 @@ pub enum TypeAssignment {
     Single(Type),
     Arrow(Box<TypeAssignment>, Box<TypeAssignment>),
     Record(HashMap<String, TypeAssignment>),
+    Variant(HashMap<String, TypeAssignment>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -90,6 +91,22 @@ pub enum ASTNode {
     RecordNode {
         records: HashMap<String, ASTNode>,
     },
+    MatchingNode {
+        to_match: Box<ASTNode>,
+        cases: Vec<Case>,
+    },
+    TaggingNode {
+        ident: String,
+        value: Box<ASTNode>,
+        data_type: TypeAssignment,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Case {
+    variant: String,
+    ident: String,
+    arm: Box<ASTNode>,
 }
 
 impl ASTNode {
@@ -152,6 +169,12 @@ impl ASTNode {
                     assign.print_node(level + 1);
                 }
             }
+            ASTNode::MatchingNode { to_match, cases } => println!("matching not implemented",),
+            ASTNode::TaggingNode {
+                ident,
+                value,
+                data_type,
+            } => println!("tagging not implemented",),
         }
     }
 }
@@ -176,6 +199,8 @@ fn build_node(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
         Rule::if_then => build_if_then(pair),
         Rule::projection => build_projection(pair),
         Rule::record => build_record(pair),
+        Rule::matching => build_matching(pair),
+        Rule::tagging => build_tagging(pair),
         Rule::val_zero => Ok(ASTNode::ValueNode { value: Value::Zero }),
         Rule::val_true => Ok(ASTNode::ValueNode { value: Value::True }),
         Rule::val_false => Ok(ASTNode::ValueNode {
@@ -259,6 +284,14 @@ fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
             }
             Ok(TypeAssignment::Record(map))
         }
+        Rule::type_variant => {
+            let mut map = HashMap::new();
+            for el in pair.into_inner() {
+                let (ident, data_type) = build_type_term(el.clone())?;
+                map.insert(ident, data_type);
+            }
+            Ok(TypeAssignment::Variant(map))
+        }
         _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
     }
 }
@@ -340,4 +373,40 @@ fn build_record(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
         records.insert(name, result);
     }
     Ok(ASTNode::RecordNode { records })
+}
+
+fn build_matching(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+    let to_match = build_node(inner[0].clone())?;
+    let mut cases = Vec::new();
+    for case_el in inner[1..].iter() {
+        cases.push(build_case(case_el.clone())?);
+    }
+    Ok(ASTNode::MatchingNode {
+        to_match: Box::new(to_match),
+        cases,
+    })
+}
+
+fn build_case(pair: Pair<'_, Rule>) -> Result<Case, Box<Error>> {
+    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+    let arm = build_node(inner[2].clone())?;
+    Ok(Case {
+        variant: inner[0].clone().into_span().as_str().to_string(),
+        ident: inner[1].clone().into_span().as_str().to_string(),
+        arm: Box::new(arm),
+    })
+}
+
+//FIXME: proof of concept without using clone, still have to handle the unwraps
+fn build_tagging(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+    let mut inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+    let data_type = build_type(inner.pop().unwrap())?;
+    let value = build_node(inner.pop().unwrap())?;
+    let ident = inner.pop().unwrap().into_span().as_str().to_string();
+    Ok(ASTNode::TaggingNode {
+        ident,
+        value: Box::new(value),
+        data_type,
+    })
 }

@@ -28,7 +28,8 @@ fn main() {
     for pair in pairs.clone() {
         recursive_print(pair, 0);
     }
-
+    //TODO ast building should be errorless if parser does its job
+    //TODO remove all clones by using pop instead of indexing
     //build ast
     let ast_tree = build_ast(pairs).unwrap_or_else(|e| {
         println!("Problem when building ast tree: {}", e);

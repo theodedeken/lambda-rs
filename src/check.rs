@@ -135,6 +135,14 @@ impl ASTNode {
                 }
                 Ok(TypeAssignment::Record(types))
             }
+            ASTNode::MatchingNode { to_match, cases } => Err(Box::new(TypeError::new(format!(
+                "matching not implemented"
+            )))),
+            ASTNode::TaggingNode {
+                ident,
+                value,
+                data_type,
+            } => Err(Box::new(TypeError::new(format!("tagging not implemented")))),
         }
     }
 }

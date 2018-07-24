@@ -118,6 +118,12 @@ impl ASTNode {
                 }
                 OutputValue::Record(map)
             }
+            ASTNode::MatchingNode { to_match, cases } => panic!("matching not implemented"),
+            ASTNode::TaggingNode {
+                ident,
+                value,
+                data_type,
+            } => panic!("tagging not implemented"),
         }
     }
 }
