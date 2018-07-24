@@ -1,1 +1,1 @@
-(λ a:{status:Bool, result:Nat}. a) ((λ s: Bool. λ r: Nat. {status=s, result=r}) succ 0 ) true
+(@ a:{status:Bool, result:Nat}. a) ((@ s: Bool. @ r: Nat. {status=s, result=r}) succ 0 ) true

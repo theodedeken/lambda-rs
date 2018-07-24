@@ -1,1 +1,1 @@
-(λ a:(Nat -> Nat). a 0) (λ b: Nat. succ b)
+(@ a:(Nat -> Nat). a 0) (@ b: Nat. succ b)

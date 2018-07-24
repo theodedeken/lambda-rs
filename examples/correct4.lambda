@@ -1,8 +1,8 @@
-(λ a: Nat. a)
+(@ a: Nat. a)
   (if
-    (λ a: Nat. iszero a) pred 0
+    (@ a: Nat. iszero a) pred 0
   then
-    (λ a: Nat. succ a)
+    (@ a: Nat. succ a)
   else
-    (λ a: Nat. pred a))
+    (@ a: Nat. pred a))
   0

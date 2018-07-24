@@ -1,6 +1,7 @@
 extern crate lambda_rs;
 
 use lambda_rs::{ast::build_ast, eval::OutputValue, parser::parse_file, read_file};
+use std::collections::HashMap;
 use std::error::Error;
 
 fn run_file(filename: &str, expected: OutputValue) -> Result<(), Box<Error>> {
@@ -33,4 +34,13 @@ fn evaluate_examples() {
         .expect("Integration test for arrowtype failed");
     run_file("examples/high-order.lambda", OutputValue::Nat(2))
         .expect("Integration test for high-order failed");
+
+    let mut testmap = HashMap::new();
+    testmap.insert("status".to_string(), OutputValue::Bool(true));
+    testmap.insert("result".to_string(), OutputValue::Nat(1));
+
+    run_file("examples/record.lambda", OutputValue::Record(testmap))
+        .expect("Integration test for record failed");
+    run_file("examples/record_proj.lambda", OutputValue::Nat(1))
+        .expect("Integration test for record projection failed");
 }

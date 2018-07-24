@@ -1,1 +1,1 @@
-(λ a: Nat. succ succ 0) iszero true
+(@ a: Nat. succ succ 0) iszero true

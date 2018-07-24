@@ -18,10 +18,15 @@ impl Display for OutputValue {
         match self {
             OutputValue::Nat(x) => write!(f, "{}", x),
             OutputValue::Bool(x) => write!(f, "{}", x),
-            // TODO record
-            OutputValue::Record(records) => write!(f, "{:?}", records),
+            OutputValue::Record(records) => {
+                let list: Vec<String> = records
+                    .iter()
+                    .map(|(name, val)| format!("{}={}", name, val))
+                    .collect();
+                write!(f, "{{{}}}", list.join(", "))
+            }
             // TODO function
-            OutputValue::Func(par, body, _) => write!(f, "λ {}. {:?}", par, body),
+            OutputValue::Func(par, body, _) => write!(f, "@ {}. {:?}", par, body),
         }
     }
 }
@@ -35,7 +40,7 @@ impl ASTNode {
         match self {
             ASTNode::AbstractionNode {
                 ident,
-                data_type,
+                data_type: _,
                 body,
             } => OutputValue::Func(ident.to_string(), body.clone(), table.clone()),
             ASTNode::ApplicationNode { left, right } => {

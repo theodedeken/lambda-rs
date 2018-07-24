@@ -1,1 +1,1 @@
-(λ a: Nat. succ succ a) 0
+(@ a: Nat. succ succ a) 0

@@ -1,1 +1,1 @@
-(λ a:{status:Bool, result:Nat}. a.result) {status=true, result=succ 0}
+(@ a:{status:Bool, result:Nat}. a.result) {status=true, result=succ 0}

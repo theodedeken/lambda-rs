@@ -1,8 +1,8 @@
 (
-  λ x: Nat.
-    (λ y: Nat. x) 0
+  @ x: Nat.
+    (@ y: Nat. x) 0
 )
 succ (
-  λ f: Nat.
-    (λ g: Nat. g) 0
+  @ f: Nat.
+    (@ g: Nat. g) 0
 ) 0
