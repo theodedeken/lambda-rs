@@ -1,4 +1,6 @@
 use ast::*;
+use std::collections::HashMap;
+use std::fmt::*;
 use sym_tab::*;
 
 //type Abstr = Fn(OutputValue) -> OutputValue + 'static;
@@ -8,7 +10,20 @@ pub enum OutputValue {
     Nat(usize),
     Bool(bool),
     Func(String, Box<ASTNode>, SymbolTable<OutputValue>),
-    //Func(Rc<Abstr>),
+    Record(HashMap<String, OutputValue>),
+}
+
+impl Display for OutputValue {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        match self {
+            OutputValue::Nat(x) => write!(f, "{}", x),
+            OutputValue::Bool(x) => write!(f, "{}", x),
+            // TODO record
+            OutputValue::Record(records) => write!(f, "{:?}", records),
+            // TODO function
+            OutputValue::Func(par, body, _) => write!(f, "λ {}. {:?}", par, body),
+        }
+    }
 }
 
 impl ASTNode {
@@ -80,8 +95,24 @@ impl ASTNode {
                 Value::False => OutputValue::Bool(false),
                 Value::Zero => OutputValue::Nat(0),
             },
-            ASTNode::ProjectionNode { target, attrib } => panic!("projection not implemented"),
-            ASTNode::RecordNode { records } => panic!("projection not implemented"),
+            ASTNode::ProjectionNode { target, attrib } => {
+                if let OutputValue::Record(records) = target.eval_node(table) {
+                    if let Some(output) = records.get(attrib) {
+                        output.clone()
+                    } else {
+                        panic!("Bug in typechecker: in evaluation of projection the attribute was not found")
+                    }
+                } else {
+                    panic!("Bug in typechecker: in evaluation of projection type target type was not a record")
+                }
+            }
+            ASTNode::RecordNode { records } => {
+                let mut map = HashMap::new();
+                for (name, node) in records {
+                    map.insert(name.to_string(), node.eval_node(table));
+                }
+                OutputValue::Record(map)
+            }
         }
     }
 }

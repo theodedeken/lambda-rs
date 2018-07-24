@@ -44,11 +44,14 @@ fn main() {
     });
 
     //evaluate ast
+    //TODO custom fmt
+    println!("{}", ast_tree.eval());
+    /*
     match ast_tree.eval() {
         OutputValue::Nat(x) => println!("{}", x),
         OutputValue::Bool(x) => println!("{}", x),
         OutputValue::Func(_x, _y, _z) => println!("This should not happen I think"),
-    }
+    }*/
 }
 
 fn recursive_print(pair: Pair<'_, Rule>, level: usize) {
