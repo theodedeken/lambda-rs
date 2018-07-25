@@ -180,6 +180,7 @@ impl ASTNode {
                     )))
                 }
             }
+            ASTNode::FixNode { point } => panic!("not implemented"),
         }
     }
 }

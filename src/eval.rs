@@ -137,6 +137,7 @@ impl ASTNode {
                 value,
                 data_type: _,
             } => OutputValue::Variant(ident.to_string(), Box::new(value.eval_node(table))),
+            ASTNode::FixNode { point } => panic!("not implemented"),
         }
     }
 }

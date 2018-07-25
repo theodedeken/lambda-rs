@@ -115,6 +115,9 @@ pub enum ASTNode {
         value: Box<ASTNode>,
         data_type: TypeAssignment,
     },
+    FixNode {
+        point: Box<ASTNode>,
+    },
 }
 
 impl ASTNode {
@@ -196,6 +199,10 @@ impl ASTNode {
                 println!("{}Tag of {} to {:?}", "\t".repeat(level), ident, data_type);
                 value.print_node(level + 1)
             }
+            ASTNode::FixNode { point } => {
+                println!("{}Fixpoint", "\t".repeat(level));
+                point.print_node(level + 1)
+            }
         }
     }
 }
@@ -220,6 +227,7 @@ fn build_node(pair: Pair<'_, Rule>) -> ASTNode {
         Rule::record => build_record(pair),
         Rule::matching => build_matching(pair),
         Rule::tagging => build_tagging(pair),
+        Rule::fixpoint => build_fixpoint(pair),
         Rule::val_zero => ASTNode::ValueNode { value: Value::Zero },
         Rule::val_true => ASTNode::ValueNode { value: Value::True },
         Rule::val_false => ASTNode::ValueNode {
@@ -473,5 +481,17 @@ fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
         ident,
         value: Box::new(value),
         data_type,
+    }
+}
+
+fn build_fixpoint(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let point = build_node(
+        inner
+            .next()
+            .expect("Bug in parser: got a fix without argument"),
+    );
+    ASTNode::FixNode {
+        point: Box::new(point),
     }
 }
