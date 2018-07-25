@@ -1,0 +1,6 @@
+fix @ie:(Nat -> Bool).
+        @x:Nat.
+            if iszero x then true
+            else if iszero (pred x) then false
+            else ie (pred (pred x))
+succ succ succ succ 0

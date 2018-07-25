@@ -20,14 +20,15 @@ type_nat = { "Nat" }
 ascribe = _{ "as" }
 case = _{ "case" }
 of = _{ "of" }
-keyword = _{ val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | is_zero | type_bool | type_nat | ascribe | case | of }
+fix = _{ "fix" }
+keyword = _{ val_zero | val_true | val_false | key_if | key_else | key_then | op_succ | op_pred | is_zero | type_bool | type_nat | ascribe | case | of | fix }
 
 program = { soi ~ application ~ eoi }
 
 // Terms
 application = { var_abstr ~ application* }
 //TODO rename var_abstr to term
-var_abstr = _{ variable | abstraction | record | projection | tagging | matching }
+var_abstr = _{ variable | abstraction | record | projection | tagging | matching | fixpoint }
 abstraction = { "("* ~ "@" ~ type_term ~ "." ~ application ~ ")"? }
 record = { "{" ~ (record_el ~ ",")* ~ record_el ~ "}" }
 record_el = { ident ~ "=" ~ application }
@@ -36,6 +37,7 @@ projection_target = _{ p_ident | record | "(" ~ application ~ ")" }
 tagging = { "<" ~ ident ~ "=" ~ application ~ ">" ~ ascribe ~ type_ass }
 matching = { case ~ application ~ of ~ (case_el ~ "|")* ~ case_el }
 case_el = { "<" ~ ident ~ "=" ~ ident ~ ">" ~ "=>" ~ application }
+fixpoint = { fix ~ application }
 
 // Types
 type_term = { ident ~ ":" ~ type_ass }
