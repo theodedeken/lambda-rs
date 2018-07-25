@@ -49,6 +49,21 @@ pub enum TypeAssignment {
     Variant(HashMap<String, TypeAssignment>),
 }
 
+impl TypeAssignment {
+    pub fn has_variant(&self, ident: &str, data_type: TypeAssignment) -> bool {
+        match self {
+            TypeAssignment::Variant(variants) => {
+                if let Some(value) = variants.get(ident) {
+                    value == &data_type
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Bool,
@@ -93,20 +108,13 @@ pub enum ASTNode {
     },
     MatchingNode {
         to_match: Box<ASTNode>,
-        cases: Vec<Case>,
+        cases: HashMap<String, (String, Box<ASTNode>)>,
     },
     TaggingNode {
         ident: String,
         value: Box<ASTNode>,
         data_type: TypeAssignment,
     },
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Case {
-    variant: String,
-    ident: String,
-    arm: Box<ASTNode>,
 }
 
 impl ASTNode {
@@ -169,12 +177,24 @@ impl ASTNode {
                     assign.print_node(level + 1);
                 }
             }
-            ASTNode::MatchingNode { to_match, cases } => println!("matching not implemented",),
+            ASTNode::MatchingNode { to_match, cases } => {
+                println!(
+                    "{}Match case of {:?} with elements:",
+                    "\t".repeat(level),
+                    to_match
+                );
+                for (variant, (ident, arm)) in cases {
+                    println!("{}  {}={} => ", "\t".repeat(level), variant, ident);
+                    arm.print_node(level + 1)
+                }
+            }
             ASTNode::TaggingNode {
                 ident,
                 value,
                 data_type,
-            } => println!("tagging not implemented",),
+            } => {
+                println!("{}Tag of {} to {:?}", "\t".repeat(level), ident, data_type);
+            }
         }
     }
 }
@@ -402,9 +422,26 @@ fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
             .next()
             .expect("Bug in parser: got a matching expression without arguments"),
     );
-    let mut cases = Vec::new();
+    let mut cases = HashMap::new();
     for case_el in inner {
-        cases.push(build_case(case_el));
+        let mut inner: Pairs<'_, Rule> = case_el.into_inner();
+
+        let variant = inner
+            .next()
+            .expect("Bug in parser: got a case expression with incorrect number of arguments")
+            .into_span()
+            .as_str()
+            .to_string();
+        let ident = inner
+            .next()
+            .expect("Bug in parser: got a case expression with incorrect number of arguments")
+            .into_span()
+            .as_str()
+            .to_string();
+        let arm = Box::new(build_node(inner.next().expect(
+            "Bug in parser: got a case expression with incorrect number of arguments",
+        )));
+        cases.insert(variant, (ident, arm));
     }
     ASTNode::MatchingNode {
         to_match: Box::new(to_match),
@@ -412,48 +449,25 @@ fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
-fn build_case(pair: Pair<'_, Rule>) -> Case {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
-    let arm = Box::new(build_node(inner.next().expect(
-        "Bug in parser: got a case expression with incorrect number of arguments",
-    )));
-    let ident = inner
-        .next()
-        .expect("Bug in parser: got a case expression with incorrect number of arguments")
-        .into_span()
-        .as_str()
-        .to_string();
-    let variant = inner
-        .next()
-        .expect("Bug in parser: got a case expression with incorrect number of arguments")
-        .into_span()
-        .as_str()
-        .to_string();
-    Case {
-        variant,
-        ident,
-        arm,
-    }
-}
-
 fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.into_inner();
-    let data_type = build_type(
-        inner
-            .next()
-            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
-    );
-    let value = build_node(
-        inner
-            .next()
-            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
-    );
     let ident = inner
         .next()
         .expect("Bug in parser: got a tagging expression with incorrect number of arguments")
         .into_span()
         .as_str()
         .to_string();
+    let value = build_node(
+        inner
+            .next()
+            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
+    );
+    let data_type = build_type(
+        inner
+            .next()
+            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
+    );
+
     ASTNode::TaggingNode {
         ident,
         value: Box::new(value),

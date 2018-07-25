@@ -3,4 +3,4 @@
         <b_val=b> => if b then 0 else succ 0
     |   <n_val=n> => succ n
 )
-<b_val=succ succ 0> as <b_val:Bool, n_val:Nat>
+<n_val=succ succ 0> as <b_val:Bool, n_val:Nat>

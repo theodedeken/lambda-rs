@@ -135,14 +135,51 @@ impl ASTNode {
                 }
                 Ok(TypeAssignment::Record(types))
             }
-            ASTNode::MatchingNode { to_match, cases } => Err(Box::new(TypeError::new(format!(
-                "matching not implemented"
-            )))),
+            ASTNode::MatchingNode { to_match, cases } => {
+                if let TypeAssignment::Variant(variant) = to_match.check_node(table)? {
+                    let mut arm_type = None;
+                    for (variant_name, variant_type) in variant {
+                        if let Some((ident, arm)) = cases.get(&variant_name) {
+                            table.push(Scope::new(ident.to_string(), variant_type.clone()));
+
+                            if arm_type == None {
+                                arm_type = Some(arm.check_node(table)?);
+                            } else {
+                                if arm_type != Some(arm.check_node(table)?) {
+                                    return Err(Box::new(TypeError::new(
+                                        "Not all case arms return the same type".to_string(),
+                                    )));
+                                }
+                            }
+                        } else {
+                            return Err(Box::new(TypeError::new(
+                                "Not all cases are being handled".to_string(),
+                            )));
+                        }
+                    }
+                    arm_type.ok_or(Box::new(TypeError::new("Empty variant".to_string())))
+                } else {
+                    Err(Box::new(TypeError::new(
+                        "Found a match case where the argument to be matched was not a variant"
+                            .to_string(),
+                    )))
+                }
+            }
             ASTNode::TaggingNode {
                 ident,
                 value,
                 data_type,
-            } => Err(Box::new(TypeError::new(format!("tagging not implemented")))),
+            } => {
+                let value_type = value.check_node(table)?;
+                if data_type.has_variant(ident, value_type) {
+                    Ok(data_type.clone())
+                } else {
+                    Err(Box::new(TypeError::new(
+                        "Found a tag of a value, but its type is not part of the variant"
+                            .to_string(),
+                    )))
+                }
+            }
         }
     }
 }
