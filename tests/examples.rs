@@ -43,4 +43,9 @@ fn evaluate_examples() {
         .expect("Integration test for record failed");
     run_file("examples/record_proj.lambda", OutputValue::Nat(1))
         .expect("Integration test for record projection failed");
+
+    run_file("examples/variant1.lambda", OutputValue::Nat(0))
+        .expect("Integration test for variant1 failed");
+    run_file("examples/variant2.lambda", OutputValue::Nat(3))
+        .expect("Integration test for variant2 failed");
 }

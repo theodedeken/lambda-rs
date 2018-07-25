@@ -194,6 +194,7 @@ impl ASTNode {
                 data_type,
             } => {
                 println!("{}Tag of {} to {:?}", "\t".repeat(level), ident, data_type);
+                value.print_node(level + 1)
             }
         }
     }

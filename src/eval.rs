@@ -11,6 +11,7 @@ pub enum OutputValue {
     Bool(bool),
     Func(String, Box<ASTNode>, SymbolTable<OutputValue>),
     Record(HashMap<String, OutputValue>),
+    Variant(String, Box<OutputValue>),
 }
 
 impl Display for OutputValue {
@@ -27,6 +28,7 @@ impl Display for OutputValue {
             }
             // TODO function
             OutputValue::Func(par, body, _) => write!(f, "@ {}. {:?}", par, body),
+            OutputValue::Variant(ident, value) => write!(f, "<{}={}>", ident, value),
         }
     }
 }
@@ -118,12 +120,23 @@ impl ASTNode {
                 }
                 OutputValue::Record(map)
             }
-            ASTNode::MatchingNode { to_match, cases } => panic!("matching not implemented"),
+            ASTNode::MatchingNode { to_match, cases } => {
+                if let OutputValue::Variant(ident, value) = to_match.eval_node(table) {
+                    if let Some((case, arm)) = cases.get(&ident) {
+                        table.push(Scope::new(case.to_string(), *value));
+                        arm.eval_node(table)
+                    } else {
+                        panic!("Bug in typechecker: argument of case has no corresponding arm")
+                    }
+                } else {
+                    panic!("Bug in typechecker: argument of case was not a variant")
+                }
+            }
             ASTNode::TaggingNode {
                 ident,
                 value,
-                data_type,
-            } => panic!("tagging not implemented"),
+                data_type: _,
+            } => OutputValue::Variant(ident.to_string(), Box::new(value.eval_node(table))),
         }
     }
 }
