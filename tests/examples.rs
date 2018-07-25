@@ -9,7 +9,7 @@ fn run_file(filename: &str, expected: OutputValue) -> Result<(), Box<Error>> {
     let pairs = parse_file(&contents).unwrap_or_else(|_e| {
         panic!("Problem when parsing file");
     });
-    let ast_tree = build_ast(pairs)?;
+    let ast_tree = build_ast(pairs);
     let _tree_type = ast_tree.check()?;
     assert_eq!(ast_tree.eval(), expected);
     Ok(())

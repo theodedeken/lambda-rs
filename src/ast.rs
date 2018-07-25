@@ -179,14 +179,12 @@ impl ASTNode {
     }
 }
 
-pub fn build_ast(mut parsed: Pairs<Rule>) -> Result<ASTNode, Box<Error>> {
-    let first = parsed
-        .next()
-        .ok_or_else(|| Box::new(ASTError::new(format!("Invalid program"))))?;
+pub fn build_ast(mut parsed: Pairs<Rule>) -> ASTNode {
+    let first = parsed.next().expect("Empty program");
     build_node(first)
 }
 
-fn build_node(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+fn build_node(pair: Pair<'_, Rule>) -> ASTNode {
     let rule = pair.as_rule();
     match rule {
         Rule::program => build_program(pair),
@@ -201,212 +199,264 @@ fn build_node(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
         Rule::record => build_record(pair),
         Rule::matching => build_matching(pair),
         Rule::tagging => build_tagging(pair),
-        Rule::val_zero => Ok(ASTNode::ValueNode { value: Value::Zero }),
-        Rule::val_true => Ok(ASTNode::ValueNode { value: Value::True }),
-        Rule::val_false => Ok(ASTNode::ValueNode {
+        Rule::val_zero => ASTNode::ValueNode { value: Value::Zero },
+        Rule::val_true => ASTNode::ValueNode { value: Value::True },
+        Rule::val_false => ASTNode::ValueNode {
             value: Value::False,
-        }),
-        _ => Err(Box::new(ASTError::new(format!(
-            "Not implemented: {:?}",
-            rule
-        )))),
+        },
+        _ => panic!(format!("Building of {:?} not implemented", rule)),
     }
 }
 
-fn build_program(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-
-    match inner.get(0) {
-        Some(x) => build_node(x.clone()),
-        None => Err(Box::new(ASTError::new(format!(
-            "No application body in program"
-        )))),
-    }
+fn build_program(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    build_node(inner.next().expect("Bug in parser: got empty program"))
 }
 
-fn build_application(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
 
-    if inner.len() == 1 {
-        build_node(inner[0].clone())
-    } else if inner.len() == 2 {
-        Ok(ASTNode::ApplicationNode {
-            left: Box::new(build_node(inner[0].clone())?),
-            right: Box::new(build_node(inner[1].clone())?),
-        })
+    let first = build_node(
+        inner
+            .next()
+            .expect("Bug in parser: found an application with incorrect number of arguments"),
+    );
+
+    if let Some(second) = inner.next() {
+        ASTNode::ApplicationNode {
+            left: Box::new(first),
+            right: Box::new(build_node(second)),
+        }
     } else {
-        Err(Box::new(ASTError::new(format!(
-            "Found application with incorrect number of arguments"
-        ))))
+        first
     }
 }
 
-fn build_abstraction(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+fn build_abstraction(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
 
-    if inner.len() == 2 {
-        let (ident, data_type) = build_type_term(inner[0].clone())?;
+    let (ident, data_type) = build_type_term(
+        inner
+            .next()
+            .expect("Bug in parser: found an abstraction with incorrect number of arguments"),
+    );
+    let body = Box::new(build_node(inner.next().expect(
+        "Bug in parser: found an abstraction with incorrect number of arguments",
+    )));
 
-        Ok(ASTNode::AbstractionNode {
-            ident,
-            data_type,
-            body: Box::new(build_node(inner[1].clone())?),
-        })
-    } else {
-        Err(Box::new(ASTError::new(format!(
-            "Found abstraction with incorrect number of arguments"
-        ))))
+    ASTNode::AbstractionNode {
+        ident,
+        data_type,
+        body,
     }
 }
 
-fn build_type_term(pair: Pair<'_, Rule>) -> Result<(String, TypeAssignment), Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    let name = inner[0].clone().into_span().as_str().to_string();
-    let data_type = build_type(inner[1].clone())?;
-    Ok((name, data_type))
+fn build_type_term(pair: Pair<'_, Rule>) -> (String, TypeAssignment) {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let name = inner
+        .next()
+        .expect("Bug in parser: found a type term with incorrect number of arguments")
+        .into_span()
+        .as_str()
+        .to_string();
+    let data_type = build_type(
+        inner
+            .next()
+            .expect("Bug in parser: found a type term with incorrect number of arguments"),
+    );
+    (name, data_type)
 }
 
-fn build_type(pair: Pair<'_, Rule>) -> Result<TypeAssignment, Box<Error>> {
+fn build_type(pair: Pair<'_, Rule>) -> TypeAssignment {
     match pair.as_rule() {
-        Rule::type_nat => Ok(TypeAssignment::Single(Type::Nat)),
-        Rule::type_bool => Ok(TypeAssignment::Single(Type::Bool)),
+        Rule::type_nat => TypeAssignment::Single(Type::Nat),
+        Rule::type_bool => TypeAssignment::Single(Type::Bool),
         Rule::type_arrow => {
-            let arrow: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-            let left = build_type(arrow[0].clone())?;
-            let right = build_type(arrow[1].clone())?;
-            Ok(TypeAssignment::Arrow(Box::new(left), Box::new(right)))
+            let mut arrow: Pairs<'_, Rule> = pair.into_inner();
+            let left =
+                build_type(arrow.next().expect(
+                    "Bug in parser: found an arrow type with incorrect number of arguments",
+                ));
+            let right =
+                build_type(arrow.next().expect(
+                    "Bug in parser: found an arrow type with incorrect number of arguments",
+                ));
+            TypeAssignment::Arrow(Box::new(left), Box::new(right))
         }
         Rule::type_record => {
             let mut map = HashMap::new();
             for el in pair.into_inner() {
-                let (ident, data_type) = build_type_term(el.clone())?;
+                let (ident, data_type) = build_type_term(el);
                 map.insert(ident, data_type);
             }
-            Ok(TypeAssignment::Record(map))
+            TypeAssignment::Record(map)
         }
         Rule::type_variant => {
             let mut map = HashMap::new();
             for el in pair.into_inner() {
-                let (ident, data_type) = build_type_term(el.clone())?;
+                let (ident, data_type) = build_type_term(el);
                 map.insert(ident, data_type);
             }
-            Ok(TypeAssignment::Variant(map))
+            TypeAssignment::Variant(map)
         }
-        _ => Err(Box::new(ASTError::new(format!("Incorrect type")))),
+        _ => panic!(format!("Incorrect type {:?}", pair)),
     }
 }
 
-fn build_ident(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+fn build_ident(pair: Pair<'_, Rule>) -> ASTNode {
     let span = pair.into_span();
     let mut string = span.as_str().to_string();
     // hack because of bug in parser
     string = string.chars().filter(|chr| chr != &' ').collect();
-    Ok(ASTNode::IdentifierNode { name: string })
+    ASTNode::IdentifierNode { name: string }
 }
 
-fn build_arithmetic(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
 
-    if inner.len() == 2 {
-        let op = match inner[0].as_rule() {
-            Rule::op_succ => Ok(Operator::Succ),
-            Rule::op_pred => Ok(Operator::Pred),
-            _ => Err(Box::new(ASTError::new(format!("Incorrect operator")))),
-        };
-        Ok(ASTNode::ArithmeticNode {
-            op: op?,
-            expr: Box::new(build_node(inner[1].clone())?),
-        })
-    } else {
-        Err(Box::new(ASTError::new(format!(
-            "Found arithmetic with incorrect number of arguments"
-        ))))
+    let op = match inner
+        .next()
+        .expect("Bug in parser: found an arithmetic expression with incorrect number of arguments")
+        .as_rule()
+    {
+        Rule::op_succ => Operator::Succ,
+        Rule::op_pred => Operator::Pred,
+        _ => panic!(format!("Incorrect operator")),
+    };
+    ASTNode::ArithmeticNode {
+        op,
+        expr: Box::new(build_node(inner.next().expect(
+            "Bug in parser: found an arithmetic expression with incorrect number of arguments",
+        ))),
     }
 }
 
-fn build_zero_check(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    if inner.len() == 1 {
-        Ok(ASTNode::IsZeroNode {
-            expr: Box::new(build_node(inner[0].clone())?),
-        })
-    } else {
-        Err(Box::new(ASTError::new(format!(
-            "Found zero check with incorrect number of arguments"
-        ))))
+fn build_zero_check(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    ASTNode::IsZeroNode {
+        expr: Box::new(build_node(inner.next().expect(
+            "Bug in parser: found an iszero check with incorrect number of arguments",
+        ))),
     }
 }
 
-fn build_if_then(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-
-    if inner.len() == 3 {
-        Ok(ASTNode::ConditionNode {
-            clause: Box::new(build_node(inner[0].clone())?),
-            then_arm: Box::new(build_node(inner[1].clone())?),
-            else_arm: Box::new(build_node(inner[2].clone())?),
-        })
-    } else {
-        Err(Box::new(ASTError::new(format!(
-            "Found ifthenelse with incorrect number of arguments"
-        ))))
+fn build_if_then(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner = pair.into_inner().map(|el| Box::new(build_node(el)));
+    ASTNode::ConditionNode {
+        clause: inner
+            .next()
+            .expect("Bug in parser: found an ifthenelse with incorrect number of arguments"),
+        then_arm: inner
+            .next()
+            .expect("Bug in parser: found an ifthenelse with incorrect number of arguments"),
+        else_arm: inner
+            .next()
+            .expect("Bug in parser: found an ifthenelse with incorrect number of arguments"),
     }
 }
 
-fn build_projection(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let parts: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
+fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut parts: Pairs<'_, Rule> = pair.into_inner();
 
-    let target = build_node(parts[0].clone())?;
-    let attrib = parts[1].clone().into_span().as_str().to_string();
-    Ok(ASTNode::ProjectionNode {
+    let target = build_node(
+        parts
+            .next()
+            .expect("Bug in parser: found a projection with incorrect number of arguments"),
+    );
+    let attrib = parts
+        .next()
+        .expect("Bug in parser: found a projection with incorrect number of arguments")
+        .into_span()
+        .as_str()
+        .to_string();
+    ASTNode::ProjectionNode {
         target: Box::new(target),
         attrib,
-    })
+    }
 }
 
-fn build_record(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
+fn build_record(pair: Pair<'_, Rule>) -> ASTNode {
     let mut records = HashMap::new();
     for el in pair.into_inner() {
-        let parts: Vec<Pair<'_, Rule>> = el.into_inner().collect();
-        let name = parts[0].clone().into_span().as_str().to_string();
-        let result = build_node(parts[1].clone())?;
+        let mut parts: Pairs<'_, Rule> = el.into_inner();
+        let name = parts
+            .next()
+            .expect("Bug in parser: found a record element with incorrect number of arguments")
+            .into_span()
+            .as_str()
+            .to_string();
+        let result =
+            build_node(parts.next().expect(
+                "Bug in parser: found a record element with incorrect number of arguments",
+            ));
         records.insert(name, result);
     }
-    Ok(ASTNode::RecordNode { records })
+    ASTNode::RecordNode { records }
 }
 
-fn build_matching(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    let to_match = build_node(inner[0].clone())?;
+fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+
+    let to_match = build_node(
+        inner
+            .next()
+            .expect("Bug in parser: got a matching expression without arguments"),
+    );
     let mut cases = Vec::new();
-    for case_el in inner[1..].iter() {
-        cases.push(build_case(case_el.clone())?);
+    for case_el in inner {
+        cases.push(build_case(case_el));
     }
-    Ok(ASTNode::MatchingNode {
+    ASTNode::MatchingNode {
         to_match: Box::new(to_match),
         cases,
-    })
+    }
 }
 
-fn build_case(pair: Pair<'_, Rule>) -> Result<Case, Box<Error>> {
-    let inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    let arm = build_node(inner[2].clone())?;
-    Ok(Case {
-        variant: inner[0].clone().into_span().as_str().to_string(),
-        ident: inner[1].clone().into_span().as_str().to_string(),
-        arm: Box::new(arm),
-    })
+fn build_case(pair: Pair<'_, Rule>) -> Case {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let arm = Box::new(build_node(inner.next().expect(
+        "Bug in parser: got a case expression with incorrect number of arguments",
+    )));
+    let ident = inner
+        .next()
+        .expect("Bug in parser: got a case expression with incorrect number of arguments")
+        .into_span()
+        .as_str()
+        .to_string();
+    let variant = inner
+        .next()
+        .expect("Bug in parser: got a case expression with incorrect number of arguments")
+        .into_span()
+        .as_str()
+        .to_string();
+    Case {
+        variant,
+        ident,
+        arm,
+    }
 }
 
-//FIXME: proof of concept without using clone, still have to handle the unwraps
-fn build_tagging(pair: Pair<'_, Rule>) -> Result<ASTNode, Box<Error>> {
-    let mut inner: Vec<Pair<'_, Rule>> = pair.into_inner().collect();
-    let data_type = build_type(inner.pop().unwrap())?;
-    let value = build_node(inner.pop().unwrap())?;
-    let ident = inner.pop().unwrap().into_span().as_str().to_string();
-    Ok(ASTNode::TaggingNode {
+fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
+    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let data_type = build_type(
+        inner
+            .next()
+            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
+    );
+    let value = build_node(
+        inner
+            .next()
+            .expect("Bug in parser: got a tagging expression with incorrect number of arguments"),
+    );
+    let ident = inner
+        .next()
+        .expect("Bug in parser: got a tagging expression with incorrect number of arguments")
+        .into_span()
+        .as_str()
+        .to_string();
+    ASTNode::TaggingNode {
         ident,
         value: Box::new(value),
         data_type,
-    })
+    }
 }
