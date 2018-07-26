@@ -1,32 +1,8 @@
 use parser::*;
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
+use pest::Span;
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
-
-#[derive(Debug)]
-pub struct ASTError {
-    message: String,
-}
-
-impl ASTError {
-    pub fn new(message: String) -> ASTError {
-        ASTError { message }
-    }
-}
-
-impl fmt::Display for ASTError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl Error for ASTError {
-    fn description(&self) -> &str {
-        &self.message
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -68,6 +44,11 @@ impl TypeAssignment {
 pub enum Type {
     Bool,
     Nat,
+}
+
+pub struct ASTMeta<'a> {
+    span: Span<'a>,
+    node: ASTNode,
 }
 
 #[derive(Debug, Clone, PartialEq)]

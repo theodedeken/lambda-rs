@@ -48,4 +48,9 @@ fn evaluate_examples() {
         .expect("Integration test for variant1 failed");
     run_file("examples/variant2.lambda", OutputValue::Nat(3))
         .expect("Integration test for variant2 failed");
+
+    run_file("examples/iseven1.lambda", OutputValue::Bool(true))
+        .expect("Integration test for iseven1 failed");
+    run_file("examples/iseven2.lambda", OutputValue::Bool(false))
+        .expect("Integration test for iseven2 failed");
 }

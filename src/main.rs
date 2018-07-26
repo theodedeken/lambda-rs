@@ -9,19 +9,24 @@ use std::env;
 use std::process;
 
 fn main() {
+    // Setup environment
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
         println!("This interpreter takes exactly one argument: the filename of the lambda code");
         process::exit(1);
     }
+
+    // Read file contents
     let filename = args[1].clone();
     let contents = lambda_rs::read_file(&filename).unwrap_or_else(|e| {
-        println!("Problem when reading file: {}", e);
+        println!("Encountered an error when reading file: {}", e);
         process::exit(1);
     });
+
+    // Parse file
     let pairs = parse_file(&contents).unwrap_or_else(|e| {
-        println!("Problem when parsing file: {}", e);
+        println!("Encountered an error when parsing file:\n{}", e);
         process::exit(1);
     });
 
@@ -30,22 +35,27 @@ fn main() {
         recursive_print(pair, 0);
     }*/
 
-    //build ast
+    // Build the Abstract Syntax Tree
     let ast_tree = build_ast(pairs);
 
     // DEBUG
     //ast_tree.print();
 
-    //check ast
+    // Perform typechecking on the syntax tree
     let _tree_type = ast_tree.check().unwrap_or_else(|e| {
-        println!("Problem when type checking: {}", e);
+        println!("Encountered an error when typechecking:\n{}", e);
         process::exit(1);
     });
 
-    //evaluate ast
+    // Evaluate the Abstract Syntax tree
     println!("{}", ast_tree.eval());
 }
 
+/// Debug method to print result of parsing
+///
+/// # Arguments
+/// * `pair` - Structure used by parser
+/// * `level` - Variable to control indentation, so inner blocks get printed nicely indented
 fn recursive_print(pair: Pair<'_, Rule>, level: usize) {
     let span = pair.clone().into_span();
     println!("{}Rule:    {:?}", "\t".repeat(level), pair.as_rule());
