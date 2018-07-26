@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use std::fmt::*;
 use sym_tab::*;
 
-//type Abstr = Fn(OutputValue) -> OutputValue + 'static;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum OutputValue<'a> {
     Nat(usize),
@@ -27,10 +25,9 @@ impl<'a> Display for OutputValue<'a> {
                     .collect();
                 write!(f, "{{{}}}", list.join(", "))
             }
-            // TODO function
             OutputValue::Func(par, body, _) => write!(f, "@ {}. {:?}", par, body),
             OutputValue::Variant(ident, value) => write!(f, "<{}={}>", ident, value),
-            OutputValue::Fix(body) => write!(f, "{:?}", body),
+            OutputValue::Fix(body) => write!(f, "fix {}", body),
         }
     }
 }

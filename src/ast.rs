@@ -3,6 +3,7 @@ use pest::iterators::Pair;
 use pest::iterators::Pairs;
 use pest::Span;
 use std::collections::HashMap;
+use std::fmt::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -108,12 +109,13 @@ pub enum ASTNode<'a> {
     },
 }
 
-impl<'a> ASTNode<'a> {
-    pub fn print(&self) {
-        self.print_node(0)
+impl<'a> Display for ASTNode<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        self.print_node(f, 0)
     }
-
-    fn print_node(&self, level: usize) {
+}
+impl<'a> ASTNode<'a> {
+    fn print_node(&self, f: &mut Formatter, level: usize) -> Result {
         match self {
             ASTNode::AbstractionNode {
                 meta: _,
@@ -121,36 +123,37 @@ impl<'a> ASTNode<'a> {
                 data_type,
                 body,
             } => {
-                println!(
+                writeln!(
+                    f,
                     "{}Abstraction with variable {} of type {:?}",
                     "\t".repeat(level),
                     ident,
                     data_type
-                );
-                body.print_node(level + 1);
+                )?;
+                body.print_node(f, level + 1)
             }
             ASTNode::ApplicationNode {
                 meta: _,
                 left,
                 right,
             } => {
-                println!("{}Application", "\t".repeat(level));
-                left.print_node(level + 1);
-                right.print_node(level + 1);
+                writeln!(f, "{}Application", "\t".repeat(level))?;
+                left.print_node(f, level + 1)?;
+                right.print_node(f, level + 1)
             }
             ASTNode::IdentifierNode { meta: _, name } => {
-                println!("{}Identifier with name {}", "\t".repeat(level), name);
+                writeln!(f, "{}Identifier with name {}", "\t".repeat(level), name)
             }
             ASTNode::IsZeroNode { meta: _, expr } => {
-                println!("{}IsZero", "\t".repeat(level));
-                expr.print_node(level + 1);
+                writeln!(f, "{}IsZero", "\t".repeat(level))?;
+                expr.print_node(f, level + 1)
             }
             ASTNode::ValueNode { meta: _, value } => {
-                println!("{}Value {:?}", "\t".repeat(level), value);
+                writeln!(f, "{}Value {:?}", "\t".repeat(level), value)
             }
             ASTNode::ArithmeticNode { meta: _, op, expr } => {
-                println!("{}Arithmetic with operator {:?}", "\t".repeat(level), op);
-                expr.print_node(level + 1);
+                writeln!(f, "{}Arithmetic with operator {:?}", "\t".repeat(level), op)?;
+                expr.print_node(f, level + 1)
             }
             ASTNode::ConditionNode {
                 meta: _,
@@ -158,40 +161,43 @@ impl<'a> ASTNode<'a> {
                 then_arm,
                 else_arm,
             } => {
-                println!("{}Condition", "\t".repeat(level));
-                clause.print_node(level + 1);
-                then_arm.print_node(level + 1);
-                else_arm.print_node(level + 1);
+                writeln!(f, "{}Condition", "\t".repeat(level))?;
+                clause.print_node(f, level + 1)?;
+                then_arm.print_node(f, level + 1)?;
+                else_arm.print_node(f, level + 1)
             }
             ASTNode::ProjectionNode {
                 meta: _,
                 target,
                 attrib,
             } => {
-                println!("{}Projection to {} on", "\t".repeat(level), attrib);
-                target.print_node(level + 1);
+                writeln!(f, "{}Projection to {} on", "\t".repeat(level), attrib)?;
+                target.print_node(f, level + 1)
             }
             ASTNode::RecordNode { meta: _, records } => {
-                println!("{}Record with elements:", "\t".repeat(level));
+                writeln!(f, "{}Record with elements:", "\t".repeat(level))?;
                 for (name, assign) in records {
-                    println!("{}  {} =", "\t".repeat(level), name);
-                    assign.print_node(level + 1);
+                    writeln!(f, "{}  {} =", "\t".repeat(level), name)?;
+                    assign.print_node(f, level + 1)?;
                 }
+                write!(f, "")
             }
             ASTNode::MatchingNode {
                 meta: _,
                 to_match,
                 cases,
             } => {
-                println!(
+                writeln!(
+                    f,
                     "{}Match case of {:?} with elements:",
                     "\t".repeat(level),
                     to_match
-                );
+                )?;
                 for (variant, (ident, arm)) in cases {
-                    println!("{}  {}={} => ", "\t".repeat(level), variant, ident);
-                    arm.print_node(level + 1)
+                    writeln!(f, "{}  {}={} => ", "\t".repeat(level), variant, ident)?;
+                    arm.print_node(f, level + 1)?;
                 }
+                write!(f, "")
             }
             ASTNode::TaggingNode {
                 meta: _,
@@ -199,12 +205,18 @@ impl<'a> ASTNode<'a> {
                 value,
                 data_type,
             } => {
-                println!("{}Tag of {} to {:?}", "\t".repeat(level), ident, data_type);
-                value.print_node(level + 1)
+                writeln!(
+                    f,
+                    "{}Tag of {} to {:?}",
+                    "\t".repeat(level),
+                    ident,
+                    data_type
+                )?;
+                value.print_node(f, level + 1)
             }
             ASTNode::FixNode { meta: _, point } => {
-                println!("{}Fixpoint", "\t".repeat(level));
-                point.print_node(level + 1)
+                writeln!(f, "{}Fixpoint", "\t".repeat(level))?;
+                point.print_node(f, level + 1)
             }
         }
     }

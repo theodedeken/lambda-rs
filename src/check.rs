@@ -1,32 +1,7 @@
 use ast::*;
 use pest::Error;
 use std::collections::HashMap;
-use std::fmt;
 use sym_tab::*;
-
-/*
-#[derive(Debug)]
-pub struct TypeError {
-    message: String,
-}
-
-impl TypeError {
-    pub fn new(message: String) -> TypeError {
-        TypeError { message }
-    }
-}
-
-impl fmt::Display for TypeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl Error for TypeError {
-    fn description(&self) -> &str {
-        &self.message
-    }
-}*/
 
 impl<'a> ASTNode<'a> {
     pub fn check<R: Copy>(&self, test: R) -> Result<TypeAssignment, Error<R>> {
@@ -39,7 +14,7 @@ impl<'a> ASTNode<'a> {
         table: &mut SymbolTable<TypeAssignment>,
     ) -> Result<TypeAssignment, Error<R>> {
         match self {
-            ASTNode::ValueNode { meta, value } => match value {
+            ASTNode::ValueNode { meta: _, value } => match value {
                 Value::True => Ok(TypeAssignment::Single(Type::Bool)),
                 Value::False => Ok(TypeAssignment::Single(Type::Bool)),
                 Value::Zero => Ok(TypeAssignment::Single(Type::Nat)),
