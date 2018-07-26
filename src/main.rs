@@ -25,14 +25,17 @@ fn main() {
         process::exit(1);
     });
 
+    /* DEBUG
     for pair in pairs.clone() {
         recursive_print(pair, 0);
-    }
+    }*/
 
     //build ast
     let ast_tree = build_ast(pairs);
 
-    ast_tree.print();
+    // DEBUG
+    //ast_tree.print();
+
     //check ast
     let _tree_type = ast_tree.check().unwrap_or_else(|e| {
         println!("Problem when type checking: {}", e);

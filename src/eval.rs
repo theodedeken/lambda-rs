@@ -12,6 +12,7 @@ pub enum OutputValue {
     Func(String, Box<ASTNode>, SymbolTable<OutputValue>),
     Record(HashMap<String, OutputValue>),
     Variant(String, Box<OutputValue>),
+    Fix(Box<OutputValue>),
 }
 
 impl Display for OutputValue {
@@ -29,6 +30,7 @@ impl Display for OutputValue {
             // TODO function
             OutputValue::Func(par, body, _) => write!(f, "@ {}. {:?}", par, body),
             OutputValue::Variant(ident, value) => write!(f, "<{}={}>", ident, value),
+            OutputValue::Fix(body) => write!(f, "{:?}", body),
         }
     }
 }
@@ -47,10 +49,28 @@ impl ASTNode {
             } => OutputValue::Func(ident.to_string(), body.clone(), table.clone()),
             ASTNode::ApplicationNode { left, right } => {
                 let left_val = left.eval_node(table);
-                let right_val = right.eval_node(table);
-                if let OutputValue::Func(ident, body, mut table) = left_val {
-                    table.push(Scope::new(ident, right_val));
-                    body.eval_node(&mut table)
+                if let OutputValue::Func(ident, body, mut func_table) = left_val {
+                    let right_val = right.eval_node(table);
+                    func_table.push(Scope::new(ident, right_val));
+                    body.eval_node(&mut func_table)
+                } else if let OutputValue::Fix(func) = left_val {
+                    let destr = *func;
+                    if let OutputValue::Func(ident, body, mut _func_table) = destr {
+                        table.remove(&ident);
+                        let newnode = ASTNode::ApplicationNode {
+                            left: Box::new(ASTNode::FixNode {
+                                point: Box::new(ASTNode::AbstractionNode {
+                                    ident,
+                                    body,
+                                    data_type: TypeAssignment::Single(Type::Bool),
+                                }),
+                            }),
+                            right: right.clone(),
+                        };
+                        newnode.eval_node(table)
+                    } else {
+                        panic!("Bug in typechecker: in evaluation of application the left argument was not evaluated to a function");
+                    }
                 } else {
                     panic!("Bug in typechecker: in evaluation of application the left argument was not evaluated to a function");
                 }
@@ -88,6 +108,7 @@ impl ASTNode {
                 let value = table
                     .lookup(name)
                     .expect("Bug in typechecker: came across unknown variable");
+
                 value.clone()
             }
             ASTNode::IsZeroNode { expr } => {
@@ -137,7 +158,15 @@ impl ASTNode {
                 value,
                 data_type: _,
             } => OutputValue::Variant(ident.to_string(), Box::new(value.eval_node(table))),
-            ASTNode::FixNode { point } => panic!("not implemented"),
+            ASTNode::FixNode { point } => {
+                let left_val = point.eval_node(table);
+                if let OutputValue::Func(ident, body, mut table) = left_val.clone() {
+                    table.push(Scope::new(ident, OutputValue::Fix(Box::new(left_val))));
+                    body.eval_node(&mut table)
+                } else {
+                    panic!("Bug in typechecker: in evaluation of fixpoint the left argument was not evaluated to a function");
+                }
+            }
         }
     }
 }

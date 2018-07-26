@@ -37,7 +37,7 @@ projection_target = _{ p_ident | record | "(" ~ application ~ ")" }
 tagging = { "<" ~ ident ~ "=" ~ application ~ ">" ~ ascribe ~ type_ass }
 matching = { case ~ application ~ of ~ (case_el ~ "|")* ~ case_el }
 case_el = { "<" ~ ident ~ "=" ~ ident ~ ">" ~ "=>" ~ application }
-fixpoint = { fix ~ application }
+fixpoint = { fix ~ "|" ~ application ~ "|" }
 
 // Types
 type_term = { ident ~ ":" ~ type_ass }

@@ -180,7 +180,21 @@ impl ASTNode {
                     )))
                 }
             }
-            ASTNode::FixNode { point } => panic!("not implemented"),
+            ASTNode::FixNode { point } => {
+                if let TypeAssignment::Arrow(from, to) = point.check_node(table)? {
+                    if from == to {
+                        Ok(*to)
+                    } else {
+                        Err(Box::new(TypeError::new(
+                            "Argument of fixpoint does not result in the same type".to_string(),
+                        )))
+                    }
+                } else {
+                    Err(Box::new(TypeError::new(
+                        "Argument of fixpoint is not a function".to_string(),
+                    )))
+                }
+            }
         }
     }
 }
