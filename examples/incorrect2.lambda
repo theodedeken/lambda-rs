@@ -1,0 +1,8 @@
+(@ a: Nat. a)
+  (if
+    (@ a: Nat. succ a) pred 0
+  then
+    (@ a: Nat. succ a)
+  else
+    (@ a: Nat. pred a))
+  0

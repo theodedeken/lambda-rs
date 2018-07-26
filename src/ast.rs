@@ -46,62 +46,69 @@ pub enum Type {
     Nat,
 }
 
-pub struct ASTMeta<'a> {
-    span: Span<'a>,
-    node: ASTNode,
-}
-
 #[derive(Debug, Clone, PartialEq)]
-pub enum ASTNode {
+pub enum ASTNode<'a> {
     AbstractionNode {
+        meta: Span<'a>,
         ident: String,
         data_type: TypeAssignment,
-        body: Box<ASTNode>,
+        body: Box<ASTNode<'a>>,
     },
     ApplicationNode {
-        left: Box<ASTNode>,
-        right: Box<ASTNode>,
+        meta: Span<'a>,
+        left: Box<ASTNode<'a>>,
+        right: Box<ASTNode<'a>>,
     },
     IdentifierNode {
+        meta: Span<'a>,
         name: String,
     },
     ConditionNode {
-        clause: Box<ASTNode>,
-        then_arm: Box<ASTNode>,
-        else_arm: Box<ASTNode>,
+        meta: Span<'a>,
+        clause: Box<ASTNode<'a>>,
+        then_arm: Box<ASTNode<'a>>,
+        else_arm: Box<ASTNode<'a>>,
     },
     ArithmeticNode {
+        meta: Span<'a>,
         op: Operator,
-        expr: Box<ASTNode>,
+        expr: Box<ASTNode<'a>>,
     },
     IsZeroNode {
-        expr: Box<ASTNode>,
+        meta: Span<'a>,
+        expr: Box<ASTNode<'a>>,
     },
     ValueNode {
+        meta: Span<'a>,
         value: Value,
     },
     ProjectionNode {
-        target: Box<ASTNode>,
+        meta: Span<'a>,
+        target: Box<ASTNode<'a>>,
         attrib: String,
     },
     RecordNode {
-        records: HashMap<String, ASTNode>,
+        meta: Span<'a>,
+        records: HashMap<String, ASTNode<'a>>,
     },
     MatchingNode {
-        to_match: Box<ASTNode>,
-        cases: HashMap<String, (String, Box<ASTNode>)>,
+        meta: Span<'a>,
+        to_match: Box<ASTNode<'a>>,
+        cases: HashMap<String, (String, Box<ASTNode<'a>>)>,
     },
     TaggingNode {
+        meta: Span<'a>,
         ident: String,
-        value: Box<ASTNode>,
+        value: Box<ASTNode<'a>>,
         data_type: TypeAssignment,
     },
     FixNode {
-        point: Box<ASTNode>,
+        meta: Span<'a>,
+        point: Box<ASTNode<'a>>,
     },
 }
 
-impl ASTNode {
+impl<'a> ASTNode<'a> {
     pub fn print(&self) {
         self.print_node(0)
     }
@@ -109,6 +116,7 @@ impl ASTNode {
     fn print_node(&self, level: usize) {
         match self {
             ASTNode::AbstractionNode {
+                meta: _,
                 ident,
                 data_type,
                 body,
@@ -121,26 +129,31 @@ impl ASTNode {
                 );
                 body.print_node(level + 1);
             }
-            ASTNode::ApplicationNode { left, right } => {
+            ASTNode::ApplicationNode {
+                meta: _,
+                left,
+                right,
+            } => {
                 println!("{}Application", "\t".repeat(level));
                 left.print_node(level + 1);
                 right.print_node(level + 1);
             }
-            ASTNode::IdentifierNode { name } => {
+            ASTNode::IdentifierNode { meta: _, name } => {
                 println!("{}Identifier with name {}", "\t".repeat(level), name);
             }
-            ASTNode::IsZeroNode { expr } => {
+            ASTNode::IsZeroNode { meta: _, expr } => {
                 println!("{}IsZero", "\t".repeat(level));
                 expr.print_node(level + 1);
             }
-            ASTNode::ValueNode { value } => {
+            ASTNode::ValueNode { meta: _, value } => {
                 println!("{}Value {:?}", "\t".repeat(level), value);
             }
-            ASTNode::ArithmeticNode { op, expr } => {
+            ASTNode::ArithmeticNode { meta: _, op, expr } => {
                 println!("{}Arithmetic with operator {:?}", "\t".repeat(level), op);
                 expr.print_node(level + 1);
             }
             ASTNode::ConditionNode {
+                meta: _,
                 clause,
                 then_arm,
                 else_arm,
@@ -150,18 +163,26 @@ impl ASTNode {
                 then_arm.print_node(level + 1);
                 else_arm.print_node(level + 1);
             }
-            ASTNode::ProjectionNode { target, attrib } => {
+            ASTNode::ProjectionNode {
+                meta: _,
+                target,
+                attrib,
+            } => {
                 println!("{}Projection to {} on", "\t".repeat(level), attrib);
                 target.print_node(level + 1);
             }
-            ASTNode::RecordNode { records } => {
+            ASTNode::RecordNode { meta: _, records } => {
                 println!("{}Record with elements:", "\t".repeat(level));
                 for (name, assign) in records {
                     println!("{}  {} =", "\t".repeat(level), name);
                     assign.print_node(level + 1);
                 }
             }
-            ASTNode::MatchingNode { to_match, cases } => {
+            ASTNode::MatchingNode {
+                meta: _,
+                to_match,
+                cases,
+            } => {
                 println!(
                     "{}Match case of {:?} with elements:",
                     "\t".repeat(level),
@@ -173,6 +194,7 @@ impl ASTNode {
                 }
             }
             ASTNode::TaggingNode {
+                meta: _,
                 ident,
                 value,
                 data_type,
@@ -180,7 +202,7 @@ impl ASTNode {
                 println!("{}Tag of {} to {:?}", "\t".repeat(level), ident, data_type);
                 value.print_node(level + 1)
             }
-            ASTNode::FixNode { point } => {
+            ASTNode::FixNode { meta: _, point } => {
                 println!("{}Fixpoint", "\t".repeat(level));
                 point.print_node(level + 1)
             }
@@ -209,9 +231,16 @@ fn build_node(pair: Pair<'_, Rule>) -> ASTNode {
         Rule::matching => build_matching(pair),
         Rule::tagging => build_tagging(pair),
         Rule::fixpoint => build_fixpoint(pair),
-        Rule::val_zero => ASTNode::ValueNode { value: Value::Zero },
-        Rule::val_true => ASTNode::ValueNode { value: Value::True },
+        Rule::val_zero => ASTNode::ValueNode {
+            meta: pair.into_span(),
+            value: Value::Zero,
+        },
+        Rule::val_true => ASTNode::ValueNode {
+            meta: pair.into_span(),
+            value: Value::True,
+        },
         Rule::val_false => ASTNode::ValueNode {
+            meta: pair.into_span(),
             value: Value::False,
         },
         _ => panic!(format!("Building of {:?} not implemented", rule)),
@@ -224,7 +253,7 @@ fn build_program(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
     let first = build_node(
         inner
@@ -234,6 +263,7 @@ fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
 
     if let Some(second) = inner.next() {
         ASTNode::ApplicationNode {
+            meta: pair.into_span(),
             left: Box::new(first),
             right: Box::new(build_node(second)),
         }
@@ -243,7 +273,7 @@ fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_abstraction(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
     let (ident, data_type) = build_type_term(
         inner
@@ -255,6 +285,7 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> ASTNode {
     )));
 
     ASTNode::AbstractionNode {
+        meta: pair.into_span(),
         ident,
         data_type,
         body,
@@ -314,15 +345,18 @@ fn build_type(pair: Pair<'_, Rule>) -> TypeAssignment {
 }
 
 fn build_ident(pair: Pair<'_, Rule>) -> ASTNode {
-    let span = pair.into_span();
+    let span = pair.clone().into_span();
     let mut string = span.as_str().to_string();
     // hack because of bug in parser
     string = string.chars().filter(|chr| chr != &' ').collect();
-    ASTNode::IdentifierNode { name: string }
+    ASTNode::IdentifierNode {
+        meta: pair.into_span(),
+        name: string,
+    }
 }
 
 fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
     let op = match inner
         .next()
@@ -334,6 +368,7 @@ fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
         _ => panic!(format!("Incorrect operator")),
     };
     ASTNode::ArithmeticNode {
+        meta: pair.into_span(),
         op,
         expr: Box::new(build_node(inner.next().expect(
             "Bug in parser: found an arithmetic expression with incorrect number of arguments",
@@ -342,8 +377,9 @@ fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_zero_check(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     ASTNode::IsZeroNode {
+        meta: pair.into_span(),
         expr: Box::new(build_node(inner.next().expect(
             "Bug in parser: found an iszero check with incorrect number of arguments",
         ))),
@@ -351,8 +387,9 @@ fn build_zero_check(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_if_then(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner = pair.into_inner().map(|el| Box::new(build_node(el)));
+    let mut inner = pair.clone().into_inner().map(|el| Box::new(build_node(el)));
     ASTNode::ConditionNode {
+        meta: pair.into_span(),
         clause: inner
             .next()
             .expect("Bug in parser: found an ifthenelse with incorrect number of arguments"),
@@ -366,7 +403,7 @@ fn build_if_then(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut parts: Pairs<'_, Rule> = pair.into_inner();
+    let mut parts: Pairs<'_, Rule> = pair.clone().into_inner();
 
     let target = build_node(
         parts
@@ -380,6 +417,7 @@ fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
         .as_str()
         .to_string();
     ASTNode::ProjectionNode {
+        meta: pair.into_span(),
         target: Box::new(target),
         attrib,
     }
@@ -387,7 +425,7 @@ fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
 
 fn build_record(pair: Pair<'_, Rule>) -> ASTNode {
     let mut records = HashMap::new();
-    for el in pair.into_inner() {
+    for el in pair.clone().into_inner() {
         let mut parts: Pairs<'_, Rule> = el.into_inner();
         let name = parts
             .next()
@@ -401,11 +439,14 @@ fn build_record(pair: Pair<'_, Rule>) -> ASTNode {
             ));
         records.insert(name, result);
     }
-    ASTNode::RecordNode { records }
+    ASTNode::RecordNode {
+        meta: pair.into_span(),
+        records,
+    }
 }
 
 fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
     let to_match = build_node(
         inner
@@ -434,13 +475,14 @@ fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
         cases.insert(variant, (ident, arm));
     }
     ASTNode::MatchingNode {
+        meta: pair.into_span(),
         to_match: Box::new(to_match),
         cases,
     }
 }
 
 fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     let ident = inner
         .next()
         .expect("Bug in parser: got a tagging expression with incorrect number of arguments")
@@ -459,6 +501,7 @@ fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
     );
 
     ASTNode::TaggingNode {
+        meta: pair.into_span(),
         ident,
         value: Box::new(value),
         data_type,
@@ -466,13 +509,14 @@ fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
 }
 
 fn build_fixpoint(pair: Pair<'_, Rule>) -> ASTNode {
-    let mut inner: Pairs<'_, Rule> = pair.into_inner();
+    let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     let point = build_node(
         inner
             .next()
             .expect("Bug in parser: got a fix without argument"),
     );
     ASTNode::FixNode {
+        meta: pair.into_span(),
         point: Box::new(point),
     }
 }
