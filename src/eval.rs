@@ -33,6 +33,11 @@ impl<'a> Display for OutputValue<'a> {
 }
 
 impl<'a> ASTNode<'a> {
+    /// Evaluates an abstract syntax tree and return the result.
+    ///
+    /// # Panics
+    /// Throws a panic when encountering an invalid tree structure or an invalid type. This would indicate a problem
+    /// in the typechecking logic.
     pub fn eval(&self) -> OutputValue {
         self.eval_node(&mut SymbolTable::new())
     }

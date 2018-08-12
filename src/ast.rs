@@ -279,11 +279,19 @@ fn build_node(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the program rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_program(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.into_inner();
     build_node(inner.next().expect("Bug in parser: got empty program"))
 }
 
+/// Logic to handle the application rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
@@ -304,6 +312,10 @@ fn build_application(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the abstraction rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_abstraction(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
@@ -324,6 +336,10 @@ fn build_abstraction(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to parse a type_term from the parser output
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_type_term(pair: Pair<'_, Rule>) -> (String, TypeAssignment) {
     let mut inner: Pairs<'_, Rule> = pair.into_inner();
     let name = inner
@@ -340,6 +356,10 @@ fn build_type_term(pair: Pair<'_, Rule>) -> (String, TypeAssignment) {
     (name, data_type)
 }
 
+/// Logic to parse a type from the parser output
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_type(pair: Pair<'_, Rule>) -> TypeAssignment {
     match pair.as_rule() {
         Rule::type_nat => TypeAssignment::Single(Type::Nat),
@@ -376,6 +396,10 @@ fn build_type(pair: Pair<'_, Rule>) -> TypeAssignment {
     }
 }
 
+/// Logic to handle the ident rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_ident(pair: Pair<'_, Rule>) -> ASTNode {
     let span = pair.clone().into_span();
     let mut string = span.as_str().to_string();
@@ -387,6 +411,10 @@ fn build_ident(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the arithmetic rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
@@ -408,6 +436,10 @@ fn build_arithmetic(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the zero_check rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_zero_check(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     ASTNode::IsZeroNode {
@@ -418,6 +450,10 @@ fn build_zero_check(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the if_then rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_if_then(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner = pair.clone().into_inner().map(|el| Box::new(build_node(el)));
     ASTNode::ConditionNode {
@@ -434,6 +470,10 @@ fn build_if_then(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the projection rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
     let mut parts: Pairs<'_, Rule> = pair.clone().into_inner();
 
@@ -455,6 +495,10 @@ fn build_projection(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the record rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_record(pair: Pair<'_, Rule>) -> ASTNode {
     let mut records = HashMap::new();
     for el in pair.clone().into_inner() {
@@ -477,6 +521,10 @@ fn build_record(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the matching rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
 
@@ -513,6 +561,10 @@ fn build_matching(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the tagging rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     let ident = inner
@@ -540,6 +592,10 @@ fn build_tagging(pair: Pair<'_, Rule>) -> ASTNode {
     }
 }
 
+/// Logic to handle the fixpoint rule of the parser
+///
+/// # Arguments
+/// * `pair` - the current rule that is being built
 fn build_fixpoint(pair: Pair<'_, Rule>) -> ASTNode {
     let mut inner: Pairs<'_, Rule> = pair.clone().into_inner();
     let point = build_node(

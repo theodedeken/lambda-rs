@@ -42,7 +42,7 @@ fn main() {
     // println!("{}", ast_tree);
 
     // Perform typechecking on the syntax tree
-    let _tree_type = ast_tree.check(0).unwrap_or_else(|e| {
+    let _tree_type = ast_tree.check::<i32>().unwrap_or_else(|e| {
         println!("Encountered an error when typechecking:\n{}", e);
         process::exit(1);
     });

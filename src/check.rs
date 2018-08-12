@@ -4,14 +4,14 @@ use std::collections::HashMap;
 use sym_tab::*;
 
 impl<'a> ASTNode<'a> {
-    /// Performs typechecking on the abstract syntax tree. and
-    pub fn check<R: Copy>(&self, test: R) -> Result<TypeAssignment, Error<R>> {
-        self.check_node(test, &mut SymbolTable::new())
+    /// Performs typechecking on the abstract syntax tree and returns the resulting type or an error
+    /// specifying the problem encountered when type checking
+    pub fn check<R: Copy>(&self) -> Result<TypeAssignment, Error<R>> {
+        self.check_node(&mut SymbolTable::new())
     }
 
     fn check_node<R: Copy>(
         &self,
-        test: R,
         table: &mut SymbolTable<TypeAssignment>,
     ) -> Result<TypeAssignment, Error<R>> {
         match self {
@@ -20,7 +20,7 @@ impl<'a> ASTNode<'a> {
                 Value::False => Ok(TypeAssignment::Single(Type::Bool)),
                 Value::Zero => Ok(TypeAssignment::Single(Type::Nat)),
             },
-            ASTNode::IsZeroNode { meta, expr } => match expr.check_node(test, table)? {
+            ASTNode::IsZeroNode { meta, expr } => match expr.check_node(table)? {
                 TypeAssignment::Single(Type::Nat) => Ok(TypeAssignment::Single(Type::Bool)),
                 _ => Err(Error::CustomErrorSpan {
                     message: "The argument of a zero check should be of type Nat".to_string(),
@@ -43,7 +43,7 @@ impl<'a> ASTNode<'a> {
                 then_arm,
                 else_arm,
             } => {
-                let clause_type = clause.check_node(test, table)?;
+                let clause_type = clause.check_node(table)?;
                 if clause_type != TypeAssignment::Single(Type::Bool) {
                     return Err(Error::CustomErrorSpan {
                         message: "The clause of an if expression should be of type Bool"
@@ -51,8 +51,8 @@ impl<'a> ASTNode<'a> {
                         span: meta.clone(),
                     });
                 }
-                let then_type = then_arm.check_node(test, table)?;
-                let else_type = else_arm.check_node(test, table)?;
+                let then_type = then_arm.check_node(table)?;
+                let else_type = else_arm.check_node(table)?;
                 if then_type != else_type {
                     return Err(Error::CustomErrorSpan {
                         message:
@@ -63,7 +63,7 @@ impl<'a> ASTNode<'a> {
                 }
                 Ok(then_type)
             }
-            ASTNode::ArithmeticNode { meta, op: _, expr } => match expr.check_node(test, table)? {
+            ASTNode::ArithmeticNode { meta, op: _, expr } => match expr.check_node(table)? {
                 TypeAssignment::Single(Type::Nat) => Ok(TypeAssignment::Single(Type::Nat)),
                 _ => Err(Error::CustomErrorSpan {
                     message: "Arithmetic expression should have Nat as type".to_string(),
@@ -71,8 +71,8 @@ impl<'a> ASTNode<'a> {
                 }),
             },
             ASTNode::ApplicationNode { meta, left, right } => {
-                let left_type = left.check_node(test, table)?;
-                let right_type = right.check_node(test, table)?;
+                let left_type = left.check_node(table)?;
+                let right_type = right.check_node(table)?;
                 if let TypeAssignment::Arrow(first, second) = left_type {
                     if *first == right_type {
                         Ok(*second)
@@ -97,7 +97,7 @@ impl<'a> ASTNode<'a> {
                 body,
             } => {
                 table.push(Scope::new(ident.to_string(), data_type.clone()));
-                let body_type = body.check_node(test, table)?;
+                let body_type = body.check_node(table)?;
                 Ok(TypeAssignment::Arrow(
                     Box::new(data_type.clone()),
                     Box::new(body_type),
@@ -108,7 +108,7 @@ impl<'a> ASTNode<'a> {
                 target,
                 attrib,
             } => {
-                if let TypeAssignment::Record(types) = target.check_node(test, table)? {
+                if let TypeAssignment::Record(types) = target.check_node(table)? {
                     if let Some(attrib_type) = types.get(attrib) {
                         Ok(attrib_type.clone())
                     } else {
@@ -128,7 +128,7 @@ impl<'a> ASTNode<'a> {
             ASTNode::RecordNode { meta: _, records } => {
                 let mut types: HashMap<String, TypeAssignment> = HashMap::new();
                 for (name, node) in records {
-                    types.insert(name.to_string(), node.check_node(test, table)?);
+                    types.insert(name.to_string(), node.check_node(table)?);
                 }
                 Ok(TypeAssignment::Record(types))
             }
@@ -137,16 +137,16 @@ impl<'a> ASTNode<'a> {
                 to_match,
                 cases,
             } => {
-                if let TypeAssignment::Variant(variant) = to_match.check_node(test, table)? {
+                if let TypeAssignment::Variant(variant) = to_match.check_node(table)? {
                     let mut arm_type = None;
                     for (variant_name, variant_type) in variant {
                         if let Some((ident, arm)) = cases.get(&variant_name) {
                             table.push(Scope::new(ident.to_string(), variant_type.clone()));
 
                             if arm_type == None {
-                                arm_type = Some(arm.check_node(test, table)?);
+                                arm_type = Some(arm.check_node(table)?);
                             } else {
-                                if arm_type != Some(arm.check_node(test, table)?) {
+                                if arm_type != Some(arm.check_node(table)?) {
                                     return Err(Error::CustomErrorSpan {
                                         message: "All outcomes of a case expression should result in the same type".to_string(),
                                         span: meta.clone(),
@@ -182,7 +182,7 @@ impl<'a> ASTNode<'a> {
                 value,
                 data_type,
             } => {
-                let value_type = value.check_node(test, table)?;
+                let value_type = value.check_node(table)?;
                 if data_type.has_variant(ident, value_type) {
                     Ok(data_type.clone())
                 } else {
@@ -193,7 +193,7 @@ impl<'a> ASTNode<'a> {
                 }
             }
             ASTNode::FixNode { meta, point } => {
-                if let TypeAssignment::Arrow(from, to) = point.check_node(test, table)? {
+                if let TypeAssignment::Arrow(from, to) = point.check_node(table)? {
                     if from == to {
                         Ok(*to)
                     } else {

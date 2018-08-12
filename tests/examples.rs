@@ -11,7 +11,7 @@ fn run_file<'a>(filename: &'a str, expected: OutputValue) {
     });
     let ast_tree = build_ast(pairs);
     let _tree_type = ast_tree
-        .check(0)
+        .check::<i32>()
         .unwrap_or_else(|e| panic!(format!("Typechecking for {} failed with {}", filename, e)));
     assert_eq!(ast_tree.eval(), expected);
 }
