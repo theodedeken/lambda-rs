@@ -39,7 +39,7 @@ fn main() {
     let ast_tree = build_ast(pairs);
 
     // DEBUG
-    //println!("{}", ast_tree);
+    // println!("{}", ast_tree);
 
     // Perform typechecking on the syntax tree
     let _tree_type = ast_tree.check(0).unwrap_or_else(|e| {

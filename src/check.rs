@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use sym_tab::*;
 
 impl<'a> ASTNode<'a> {
+    /// Performs typechecking on the abstract syntax tree. and
     pub fn check<R: Copy>(&self, test: R) -> Result<TypeAssignment, Error<R>> {
         self.check_node(test, &mut SymbolTable::new())
     }

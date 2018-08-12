@@ -27,6 +27,12 @@ pub enum TypeAssignment {
 }
 
 impl TypeAssignment {
+    /// Returns whether the `TypeAssignment` is of type `Variant` and if the given identifier is part
+    /// of this variant and has the correct type.
+    ///
+    /// # Arguments
+    /// * `ident` - identifier to check
+    /// * `data_type` - type associated with the identifier
     pub fn has_variant(&self, ident: &str, data_type: TypeAssignment) -> bool {
         match self {
             TypeAssignment::Variant(variants) => {
@@ -47,6 +53,7 @@ pub enum Type {
     Nat,
 }
 
+/// Abstract Syntax Tree Nodes
 #[derive(Debug, Clone, PartialEq)]
 pub enum ASTNode<'a> {
     AbstractionNode {
@@ -115,6 +122,7 @@ impl<'a> Display for ASTNode<'a> {
     }
 }
 impl<'a> ASTNode<'a> {
+    /// Debug method to print AST tree
     fn print_node(&self, f: &mut Formatter, level: usize) -> Result {
         match self {
             ASTNode::AbstractionNode {
@@ -222,11 +230,23 @@ impl<'a> ASTNode<'a> {
     }
 }
 
+/// Builds an abstract syntax tree from the raw parser output
+///
+/// # Arguments
+/// * `parsed` - parser output
+///
+/// # Panics
+/// Throws a panic when encountering an incorrect parsing structure, this indicates a problem
+/// in the parser or syntax definition.
 pub fn build_ast(mut parsed: Pairs<Rule>) -> ASTNode {
     let first = parsed.next().expect("Empty program");
     build_node(first)
 }
 
+/// Builds the node associated with the given rule.
+///
+/// # Arguments
+/// * `pair` - the part of parsed output being processed
 fn build_node(pair: Pair<'_, Rule>) -> ASTNode {
     let rule = pair.as_rule();
     match rule {
